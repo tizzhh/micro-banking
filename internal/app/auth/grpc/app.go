@@ -7,7 +7,6 @@ import (
 	"time"
 
 	authgrpc "github.com/tizzhh/micro-banking/internal/delivery/grpc/auth"
-	"github.com/tizzhh/micro-banking/internal/services/auth"
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 	"google.golang.org/grpc"
 )
@@ -18,10 +17,8 @@ type App struct {
 	port       int
 }
 
-func New(log *slog.Logger, port int, tokenTTL time.Duration) *App {
+func New(log *slog.Logger, port int, tokenTTL time.Duration, authService authgrpc.Auth) *App {
 	grpcServer := grpc.NewServer()
-
-	authService := auth.New(log, tokenTTL)
 
 	authgrpc.Register(grpcServer, authService)
 

@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	"github.com/bufbuild/protovalidate-go"
 	authv1 "github.com/tizzhh/micro-banking/gen/go/protos/proto/auth"
+	auth "github.com/tizzhh/micro-banking/internal/services/auth/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,7 +25,7 @@ type Auth interface {
 	Register(ctx context.Context, email string, password string, firstName string, lastName string, age int32) (int64, error)
 	Login(ctx context.Context, email string, password string) (string, error)
 	UpdatePassword(ctx context.Context, email string, oldPassword string, newPassword string) error
-	Unregister(ctx context.Context, email string) error
+	Unregister(ctx context.Context, email string, password string) error
 }
 
 func (s *serverApi) Register(ctx context.Context, req *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
@@ -38,7 +40,9 @@ func (s *serverApi) Register(ctx context.Context, req *authv1.RegisterRequest) (
 
 	newUserId, err := s.auth.Register(ctx, req.GetEmail(), req.GetPassword(), req.GetFirstName(), req.GetLastName(), req.GetAge())
 	if err != nil {
-		// TODO check error if user already exists
+		if errors.Is(err, auth.ErrUserAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -60,7 +64,9 @@ func (s *serverApi) Login(ctx context.Context, req *authv1.LoginRequest) (*authv
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		// TODO check error if user is not found
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -81,7 +87,9 @@ func (s *serverApi) UpdatePassword(ctx context.Context, req *authv1.UpdatePasswo
 
 	err = s.auth.UpdatePassword(ctx, req.GetEmail(), req.GetOldPassword(), req.NewPassword)
 	if err != nil {
-		// TODO check error if passwords don't match
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -100,9 +108,11 @@ func (s *serverApi) Unregister(ctx context.Context, req *authv1.UnregisterReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.auth.Unregister(ctx, req.GetEmail())
+	err = s.auth.Unregister(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		// TODO check error if user is not found
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 

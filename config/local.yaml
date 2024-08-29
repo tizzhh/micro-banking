@@ -7,7 +7,7 @@ grpc:
 
 db:
   db_name: micro_bank
-  db_user: admin
-  db_password: admin
+  db_user: bank_admin
+  db_password: bank_admin
   db_host: localhost
   db_port: 5432

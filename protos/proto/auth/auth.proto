@@ -14,11 +14,11 @@ service Auth {
 }   
 
 message RegisterRequest {
-    string email = 1 [(buf.validate.field).string.email = true];
+    string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];
     string password = 2 [(buf.validate.field).string.min_len = 5, (buf.validate.field).string.max_len = 100];
     string first_name = 3 [(buf.validate.field).string.min_len = 2, (buf.validate.field).string.max_len = 100];
     string last_name = 4 [(buf.validate.field).string.min_len = 2, (buf.validate.field).string.max_len = 100];
-    int32 age = 5 [(buf.validate.field).int32.gt = 18];
+    int32 age = 5 [(buf.validate.field).int32.gte = 18, (buf.validate.field).int32.lt = 150];
 }
 
 message RegisterResponse {
@@ -47,6 +47,7 @@ message UpdatePasswordResponse {
 
 message UnregisterRequest {
     string email = 1 [(buf.validate.field).string.email = true];
+    string password = 2 [(buf.validate.field).string.min_len = 5, (buf.validate.field).string.max_len = 100];
 }
 
 message UnregisterResponse {

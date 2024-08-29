@@ -19,9 +19,9 @@ func NewToken(user models.User, tokenTTL time.Duration) (string, error) {
 
 	secretKey := os.Getenv("SECRET-KEY")
 
-	tokenString, err := token.SignedString(secretKey)
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	return tokenString, nil
 }

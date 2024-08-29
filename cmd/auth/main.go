@@ -11,10 +11,8 @@ import (
 )
 
 func main() {
-	const caller = "auth app"
-
 	cfg := config.Get()
-	log := sl.AddCaller(sl.Get(), caller)
+	log := sl.Get()
 	log.Info("starting auth app")
 
 	authapp := authapp.New(log, cfg.GRPC.Port, cfg.TokenTTL)

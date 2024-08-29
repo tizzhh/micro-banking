@@ -5,6 +5,8 @@ import (
 	"time"
 
 	grpcapp "github.com/tizzhh/micro-banking/internal/app/auth/grpc"
+	"github.com/tizzhh/micro-banking/internal/services/auth"
+	"github.com/tizzhh/micro-banking/internal/storage/postgres"
 )
 
 type App struct {
@@ -12,11 +14,15 @@ type App struct {
 }
 
 func New(log *slog.Logger, port int, tokenTTL time.Duration) *App {
-	// TODO: get storage
+	storage, err := postgres.Get()
 
-	// TODO: get service
+	if err != nil {
+		panic(err)
+	}
 
-	grpcApp := grpcapp.New(log, port)
+	authService := auth.New(log, tokenTTL, storage, storage, storage, storage)
+
+	grpcApp := grpcapp.New(log, port, tokenTTL, authService)
 
 	return &App{
 		GRPCServer: grpcApp,
