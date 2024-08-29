@@ -41,13 +41,18 @@ func Get() *Config {
 func MustLoad() *Config {
 	configPath, ok := os.LookupEnv("CONFIG_PATH")
 	if !ok {
-		panic("CONFIG_PATH is unset")
+		panic("CONFIG_PATH is not set")
 	}
 	if configPath == "" {
 		panic("config path is empty")
 	}
 	if _, err := os.Stat(configPath); err != nil {
 		panic("config file does not exist")
+	}
+
+	_, ok = os.LookupEnv("SECRET_KEY")
+	if !ok {
+		panic("SECRET_KEY for JWT is not set")
 	}
 
 	var cfg Config
