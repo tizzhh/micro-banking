@@ -15,28 +15,30 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func New(log *slog.Logger, tokenTTL time.Duration, userSaver UserSaver, userProvider UserProvider, userUpdater UserUpdater, userDeleter UserDeleter) *Auth {
+func New(log *slog.Logger, tokenTTL time.Duration, userSaver UserSaver, userProvider UserProvider, userUpdater UserUpdater, userDeleter UserDeleter, currencyInitializer CurrencyInitializer) *Auth {
 	return &Auth{
-		log:          log,
-		tokenTTL:     tokenTTL,
-		userSaver:    userSaver,
-		userProvider: userProvider,
-		userUpdater:  userUpdater,
-		userDeleter:  userDeleter,
+		log:                 log,
+		tokenTTL:            tokenTTL,
+		userSaver:           userSaver,
+		userProvider:        userProvider,
+		userUpdater:         userUpdater,
+		userDeleter:         userDeleter,
+		currencyInitializer: currencyInitializer,
 	}
 }
 
 type Auth struct {
-	log          *slog.Logger
-	tokenTTL     time.Duration
-	userSaver    UserSaver
-	userProvider UserProvider
-	userUpdater  UserUpdater
-	userDeleter  UserDeleter
+	log                 *slog.Logger
+	tokenTTL            time.Duration
+	userSaver           UserSaver
+	userProvider        UserProvider
+	userUpdater         UserUpdater
+	userDeleter         UserDeleter
+	currencyInitializer CurrencyInitializer
 }
 
 type UserSaver interface {
-	SaveUser(ctx context.Context, user models.User) (int64, error)
+	SaveUser(ctx context.Context, user models.User) (uint64, error)
 }
 
 type UserProvider interface {
@@ -51,7 +53,11 @@ type UserDeleter interface {
 	DeleteUser(ctx context.Context, email string) error
 }
 
-func (a *Auth) Register(ctx context.Context, email string, password string, firstName string, lastName string, age int32) (int64, error) {
+type CurrencyInitializer interface {
+	InitializeCurrency(ctx context.Context, userId uint64) error
+}
+
+func (a *Auth) Register(ctx context.Context, email string, password string, firstName string, lastName string, age int32) (uint64, error) {
 	const caller = "services.auth.Register"
 
 	log := sl.AddCaller(a.log, caller)
@@ -83,6 +89,16 @@ func (a *Auth) Register(ctx context.Context, email string, password string, firs
 	}
 
 	log.Info("user saved")
+
+	log.Info("initializing currency for user")
+
+	err = a.currencyInitializer.InitializeCurrency(ctx, newUserId)
+	if err != nil {
+		log.Error("failed to initialize currency", sl.Error(err))
+		return 0, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	log.Info("currency intialized successfully")
 
 	return newUserId, nil
 }

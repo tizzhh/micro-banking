@@ -20,7 +20,7 @@ func New(log *slog.Logger, port int, tokenTTL time.Duration) *App {
 		panic(err)
 	}
 
-	authService := auth.New(log, tokenTTL, storage, storage, storage, storage)
+	authService := auth.New(log, tokenTTL, storage, storage, storage, storage, storage)
 
 	grpcApp := grpcapp.New(log, port, tokenTTL, authService)
 
