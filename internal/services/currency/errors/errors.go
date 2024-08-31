@@ -9,4 +9,5 @@ var (
 	ErrUserNotFound         = errors.New("user not found")
 	ErrWalletNotFound       = errors.New("wallet not found")
 	ErrInternal             = errors.New("internal error")
+	ErrCurrencyKeyNotFound  = errors.New("currency code not found")
 )

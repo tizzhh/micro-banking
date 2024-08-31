@@ -329,8 +329,3 @@ func (s *Storage) CurrencyBalance(ctx context.Context, user models.User, currenc
 
 	return wallet.Balance, nil
 }
-
-// TODO REPLACE WITH TARANTOOL
-func (s *Storage) RatesUpdater(ctx context.Context) error {
-	return nil
-}

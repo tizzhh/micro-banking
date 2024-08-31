@@ -15,7 +15,7 @@ func main() {
 	log := sl.Get()
 	log.Info("starting auth app")
 
-	currencyApp := currencyapp.New(log, cfg.GRPC.Port)
+	currencyApp := currencyapp.New(log, cfg.GRPC.CurrencyPort, cfg.Redis.PingTimeout, cfg.CurrencyApi.Timeout)
 	go currencyApp.GRPCServer.MustRun()
 
 	stop := make(chan os.Signal, 1)

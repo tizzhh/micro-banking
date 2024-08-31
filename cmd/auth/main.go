@@ -15,7 +15,7 @@ func main() {
 	log := sl.Get()
 	log.Info("starting auth app")
 
-	authapp := authapp.New(log, cfg.GRPC.Port, cfg.TokenTTL)
+	authapp := authapp.New(log, cfg.GRPC.AuthPort, cfg.TokenTTL)
 	go authapp.GRPCServer.MustRun()
 
 	stop := make(chan os.Signal, 1)

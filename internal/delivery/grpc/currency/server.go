@@ -29,7 +29,7 @@ type Currency interface {
 func (s *serverApi) Buy(ctx context.Context, req *currencyv1.BuyRequest) (*currencyv1.BuyResponse, error) {
 	validator, err := protovalidate.New()
 	if err != nil {
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, status.Error(codes.Internal, currency.ErrInternal.Error())
 	}
 
 	if err = validator.Validate(req); err != nil {
@@ -68,7 +68,7 @@ func (s *serverApi) Sell(ctx context.Context, req *currencyv1.SellRequest) (*cur
 		if errors.Is(err, currency.ErrCurrencyCodeNotFound) {
 			return nil, status.Error(codes.NotFound, currency.ErrCurrencyCodeNotFound.Error())
 		}
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, status.Error(codes.Internal, currency.ErrInternal.Error())
 	}
 	return &currencyv1.SellResponse{Email: req.GetEmail(), Sold: soldAmount}, nil
 }

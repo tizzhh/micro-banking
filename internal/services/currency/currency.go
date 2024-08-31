@@ -12,11 +12,13 @@ import (
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 )
 
-func New(log *slog.Logger, currencyOperator CurrencyOperator, userProvider UserProvider) *Currency {
+func New(log *slog.Logger, currencyOperator CurrencyOperator, userProvider UserProvider, ratesOperator RatesOperator, ratesQuerier RatesQuerier) *Currency {
 	return &Currency{
 		log:              log,
 		currencyOperator: currencyOperator,
 		userProvider:     userProvider,
+		ratesOperator:    ratesOperator,
+		ratesQuerier:     ratesQuerier,
 	}
 }
 
@@ -24,24 +26,27 @@ type Currency struct {
 	log              *slog.Logger
 	currencyOperator CurrencyOperator
 	userProvider     UserProvider
+	ratesOperator    RatesOperator
+	ratesQuerier     RatesQuerier
 }
 
 type CurrencyOperator interface {
 	Buy(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
 	Sell(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
 	CurrencyBalance(ctx context.Context, user models.User, currencyCode string) (uint64, error)
-	RatesUpdater(ctx context.Context) error
+}
+
+type RatesOperator interface {
+	SetCurrencyRate(ctx context.Context, currencyCode string, rate float32) error
+	GetCurrencyRate(ctx context.Context, currencyCode string) (float32, error)
+}
+
+type RatesQuerier interface {
+	QueryRates(ctx context.Context, currencyCode string) (float32, error)
 }
 
 type UserProvider interface {
 	User(ctx context.Context, email string) (models.User, error)
-}
-
-// TODO REPLACE WITH TARANTOOL
-var currencyPricesTEMP = map[string]float32{
-	"RUB": 0.011,
-	"EUR": 1.11,
-	"CNY": 0.14,
 }
 
 const (
@@ -96,10 +101,10 @@ func (c *Currency) Buy(ctx context.Context, email string, currencyCode string, a
 
 	log.Info("user found")
 
-	currencyPrice, exists := currencyPricesTEMP[currencyCode]
-	if !exists {
-		log.Warn("currency code not found")
-		return 0, fmt.Errorf("%s: %w", caller, currency.ErrCurrencyCodeNotFound)
+	currencyPrice, err := c.getCurrencyRate(ctx, currencyCode)
+	if err != nil {
+		log.Error("could not get currency rate", sl.Error(err))
+		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	totalCost := uint64(currencyPrice*priceToCentsConversion) * amount
@@ -154,10 +159,10 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
-	currencyPrice, exists := currencyPricesTEMP[currencyCode]
-	if !exists {
-		log.Warn("currency code not found")
-		return 0, fmt.Errorf("%s: %w", caller, currency.ErrCurrencyCodeNotFound)
+	currencyPrice, err := c.getCurrencyRate(ctx, currencyCode)
+	if err != nil {
+		log.Error("could not get currency rate", sl.Error(err))
+		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	totalCost := uint64(currencyPrice*priceToCentsConversion) * amount
@@ -196,4 +201,44 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 	currencySold := float32((currencyBalance - newCurrencyBalance) / priceToCentsConversion)
 
 	return currencySold, nil
+}
+
+func (c *Currency) getCurrencyRate(ctx context.Context, currencyCode string) (float32, error) {
+	const caller = "services.currency.getCurrencyRate"
+
+	log := sl.AddCaller(c.log, caller)
+
+	currencyPrice, err := c.ratesOperator.GetCurrencyRate(ctx, currencyCode)
+	if errors.Is(err, storage.ErrCurrencyKeyNotFound) {
+		log.Warn("currency key not found", slog.String("currency", currencyCode))
+		currencyPrice, err = c.requestRatesAPI(ctx, currencyCode)
+		if err != nil {
+			log.Error("could not request rates", sl.Error(err))
+			return 0, fmt.Errorf("%s: %w", caller, err)
+		}
+		err := c.ratesOperator.SetCurrencyRate(ctx, currencyCode, currencyPrice)
+		if err != nil {
+			log.Error("could not save currency rates", sl.Error(err))
+			return 0, fmt.Errorf("%s: %w", caller, err)
+		}
+	}
+	if err != nil {
+		log.Error("internal error", sl.Error(err))
+		return 0, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return currencyPrice, nil
+}
+
+func (c *Currency) requestRatesAPI(ctx context.Context, currencyCode string) (float32, error) {
+	const caller = "services.currency.getCurrencyRate"
+
+	log := sl.AddCaller(c.log, caller)
+
+	rates, err := c.ratesQuerier.QueryRates(ctx, currencyCode)
+	if err != nil {
+		log.Error("failed to query rates", sl.Error(err))
+		return 0, fmt.Errorf("%s: %w", caller, err)
+	}
+	return rates, nil
 }
