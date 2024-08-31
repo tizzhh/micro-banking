@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Currency_Buy_FullMethodName  = "/currency.Currency/Buy"
-	Currency_Sell_FullMethodName = "/currency.Currency/Sell"
+	Currency_Buy_FullMethodName     = "/currency.Currency/Buy"
+	Currency_Sell_FullMethodName    = "/currency.Currency/Sell"
+	Currency_Wallets_FullMethodName = "/currency.Currency/Wallets"
 )
 
 // CurrencyClient is the client API for Currency service.
@@ -29,6 +30,7 @@ const (
 type CurrencyClient interface {
 	Buy(ctx context.Context, in *BuyRequest, opts ...grpc.CallOption) (*BuyResponse, error)
 	Sell(ctx context.Context, in *SellRequest, opts ...grpc.CallOption) (*SellResponse, error)
+	Wallets(ctx context.Context, in *WalletRequest, opts ...grpc.CallOption) (*WalletResponse, error)
 }
 
 type currencyClient struct {
@@ -57,12 +59,22 @@ func (c *currencyClient) Sell(ctx context.Context, in *SellRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *currencyClient) Wallets(ctx context.Context, in *WalletRequest, opts ...grpc.CallOption) (*WalletResponse, error) {
+	out := new(WalletResponse)
+	err := c.cc.Invoke(ctx, Currency_Wallets_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CurrencyServer is the server API for Currency service.
 // All implementations must embed UnimplementedCurrencyServer
 // for forward compatibility
 type CurrencyServer interface {
 	Buy(context.Context, *BuyRequest) (*BuyResponse, error)
 	Sell(context.Context, *SellRequest) (*SellResponse, error)
+	Wallets(context.Context, *WalletRequest) (*WalletResponse, error)
 	mustEmbedUnimplementedCurrencyServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedCurrencyServer) Buy(context.Context, *BuyRequest) (*BuyRespon
 }
 func (UnimplementedCurrencyServer) Sell(context.Context, *SellRequest) (*SellResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sell not implemented")
+}
+func (UnimplementedCurrencyServer) Wallets(context.Context, *WalletRequest) (*WalletResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Wallets not implemented")
 }
 func (UnimplementedCurrencyServer) mustEmbedUnimplementedCurrencyServer() {}
 
@@ -125,6 +140,24 @@ func _Currency_Sell_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Currency_Wallets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WalletRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CurrencyServer).Wallets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Currency_Wallets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CurrencyServer).Wallets(ctx, req.(*WalletRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Currency_ServiceDesc is the grpc.ServiceDesc for Currency service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var Currency_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Sell",
 			Handler:    _Currency_Sell_Handler,
+		},
+		{
+			MethodName: "Wallets",
+			Handler:    _Currency_Wallets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

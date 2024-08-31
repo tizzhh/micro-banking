@@ -6,6 +6,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	authv1 "github.com/tizzhh/micro-banking/gen/go/protos/proto/auth"
+	"github.com/tizzhh/micro-banking/internal/domain/auth/models"
 	auth "github.com/tizzhh/micro-banking/internal/services/auth/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,6 +27,7 @@ type Auth interface {
 	Login(ctx context.Context, email string, password string) (string, error)
 	UpdatePassword(ctx context.Context, email string, oldPassword string, newPassword string) error
 	Unregister(ctx context.Context, email string, password string) error
+	User(ctx context.Context, email string) (models.User, error)
 }
 
 func (s *serverApi) Register(ctx context.Context, req *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
@@ -118,5 +120,32 @@ func (s *serverApi) Unregister(ctx context.Context, req *authv1.UnregisterReques
 
 	return &authv1.UnregisterResponse{
 		Email: req.GetEmail(),
+	}, nil
+}
+
+func (s *serverApi) User(ctx context.Context, req *authv1.UserRequest) (*authv1.UserResponse, error) {
+	validator, err := protovalidate.New()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	if err = validator.Validate(req); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	user, err := s.auth.User(ctx, req.GetEmail())
+	if err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &authv1.UserResponse{
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Age:       user.Age,
+		Balance:   user.Balance,
 	}, nil
 }

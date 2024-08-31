@@ -161,6 +161,26 @@ func (a *Auth) Unregister(ctx context.Context, email string, password string) er
 	return nil
 }
 
+func (a *Auth) User(ctx context.Context, email string) (models.User, error) {
+	const caller = "services.auth.Unregister"
+
+	log := sl.AddCaller(a.log, caller)
+
+	log.Info("deleting user")
+
+	user, err := a.userProvider.User(ctx, email)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Warn("user not found", sl.Error(err))
+			return models.User{}, fmt.Errorf("%s: %w", caller, auth.ErrInvalidCredentials)
+		}
+		log.Error("failed to get user", sl.Error(err))
+		return models.User{}, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return user, nil
+}
+
 func (a *Auth) getUserAndCheckPassword(ctx context.Context, email string, password string) (models.User, error) {
 	const caller = "services.auth.getUserAndCheckPassword"
 

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth;
 
-import "buf/validate/validate.proto";
+// import "buf/validate/validate.proto";
 
 option go_package = "tizzhh.auth.v1;authv1";
 
@@ -11,7 +11,20 @@ service Auth {
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse);
     rpc Unregister(UnregisterRequest) returns (UnregisterResponse);
+    rpc User(UserRequest) returns (UserResponse);
 }   
+
+message UserRequest {
+    string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];
+}
+
+message UserResponse {
+    string email = 1;
+    string first_name = 2;
+    string last_name = 3;
+    uint32 age = 5;
+    uint64 balance = 6;
+}
 
 message RegisterRequest {
     string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];

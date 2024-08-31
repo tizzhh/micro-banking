@@ -238,7 +238,7 @@ func getWallet(ctxTx *gorm.DB, user models.User, currency currencyModels.Currenc
 	const caller = "storage.postgres.getWallet"
 
 	var wallet currencyModels.UserWallet
-	result := ctxTx.Where(currencyModels.UserWallet{User: user, Currency: currency}).First(&wallet)
+	result := ctxTx.Where("user_id = ? AND currency_id = ?", user.ID, currency.ID).First(&wallet)
 	if result.RowsAffected == 0 {
 		return currencyModels.UserWallet{}, fmt.Errorf("%s: %w", caller, storage.ErrWalletNotFound)
 	}
@@ -270,8 +270,6 @@ func (s *Storage) performBuySellOperation(ctx context.Context, user models.User,
 		ctxTx.Rollback()
 		return fmt.Errorf("%s: %w", caller, err)
 	}
-
-	fmt.Println(newUserBalance, newCurrencyBalance)
 
 	user.Balance = newUserBalance
 	if err := ctxTx.Save(&user).Error; err != nil {
@@ -328,4 +326,21 @@ func (s *Storage) CurrencyBalance(ctx context.Context, user models.User, currenc
 	}
 
 	return wallet.Balance, nil
+}
+
+func (s *Storage) Wallets(ctx context.Context, user authModels.User) ([]currencyModels.UserWallet, error) {
+	const caller = "storage.postgres.Wallet"
+
+	var userWallets []currencyModels.UserWallet
+
+	ctxDb := s.db.WithContext(ctx)
+	result := ctxDb.Preload("Currency").Find(&userWallets)
+	if result.RowsAffected == 0 {
+		return nil, fmt.Errorf("%s: %w", caller, storage.ErrWalletNotFound)
+	}
+	if result.Error != nil {
+		return nil, fmt.Errorf("%s: %w", caller, result.Error)
+	}
+
+	return userWallets, nil
 }

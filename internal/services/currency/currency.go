@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/tizzhh/micro-banking/internal/domain/auth/models"
+	authModels "github.com/tizzhh/micro-banking/internal/domain/auth/models"
+	currencyModels "github.com/tizzhh/micro-banking/internal/domain/currency/models"
 	currency "github.com/tizzhh/micro-banking/internal/services/currency/errors"
 	"github.com/tizzhh/micro-banking/internal/storage"
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
@@ -31,9 +32,10 @@ type Currency struct {
 }
 
 type CurrencyOperator interface {
-	Buy(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
-	Sell(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
-	CurrencyBalance(ctx context.Context, user models.User, currencyCode string) (uint64, error)
+	Buy(ctx context.Context, user authModels.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
+	Sell(ctx context.Context, user authModels.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
+	CurrencyBalance(ctx context.Context, user authModels.User, currencyCode string) (uint64, error)
+	Wallets(ctx context.Context, user authModels.User) ([]currencyModels.UserWallet, error)
 }
 
 type RatesOperator interface {
@@ -46,7 +48,7 @@ type RatesQuerier interface {
 }
 
 type UserProvider interface {
-	User(ctx context.Context, email string) (models.User, error)
+	User(ctx context.Context, email string) (authModels.User, error)
 }
 
 const (
@@ -64,7 +66,7 @@ func performOperation(balance, currencyBalance, totalCost uint64, isBuy bool) (u
 	return balance + totalCost, currencyBalance - totalCost
 }
 
-func (c *Currency) getUser(ctx context.Context, email string) (models.User, error) {
+func (c *Currency) getUser(ctx context.Context, email string) (authModels.User, error) {
 	const caller = "services.currency.getUser"
 
 	log := sl.AddCaller(c.log, caller)
@@ -78,10 +80,10 @@ func (c *Currency) getUser(ctx context.Context, email string) (models.User, erro
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Warn("user not found", sl.Error(err))
-			return models.User{}, fmt.Errorf("%s: %w", caller, currency.ErrUserNotFound)
+			return authModels.User{}, fmt.Errorf("%s: %w", caller, currency.ErrUserNotFound)
 		}
 		log.Error("failed to get user", sl.Error(err))
-		return models.User{}, fmt.Errorf("%s: %w", caller, err)
+		return authModels.User{}, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	return user, nil
@@ -131,7 +133,7 @@ func (c *Currency) Buy(ctx context.Context, email string, currencyCode string, a
 			return 0, fmt.Errorf("%s: %w", caller, currency.ErrCurrencyCodeNotFound)
 		}
 		if errors.Is(err, storage.ErrWalletNotFound) {
-			log.Warn("currency code not found")
+			log.Warn("wallet not found")
 			return 0, fmt.Errorf("%s: %w", caller, currency.ErrWalletNotFound)
 		}
 		log.Error("failed to update wallet and user balance", sl.Error(err))
@@ -189,7 +191,7 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 			return 0, fmt.Errorf("%s: %w", caller, currency.ErrCurrencyCodeNotFound)
 		}
 		if errors.Is(err, storage.ErrWalletNotFound) {
-			log.Warn("currency code not found")
+			log.Warn("wallet not found")
 			return 0, fmt.Errorf("%s: %w", caller, currency.ErrWalletNotFound)
 		}
 		log.Error("failed to update wallet and user balance", sl.Error(err))
@@ -201,6 +203,33 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 	currencySold := float32((currencyBalance - newCurrencyBalance) / priceToCentsConversion)
 
 	return currencySold, nil
+}
+
+func (c *Currency) Wallets(ctx context.Context, email string) ([]currencyModels.UserWallet, error) {
+	const caller = "services.currency.Wallets"
+
+	log := sl.AddCaller(c.log, caller)
+
+	log.Info("getting wallet")
+
+	log.Info("user found")
+
+	user, err := c.getUser(ctx, email)
+	if err != nil {
+		if errors.Is(err, storage.ErrWalletNotFound) {
+			log.Warn("wallet not found")
+			return nil, fmt.Errorf("%s: %w", caller, currency.ErrWalletNotFound)
+		}
+		return nil, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	wallets, err := c.currencyOperator.Wallets(ctx, user)
+	if err != nil {
+		log.Error("failed to get user wallets", sl.Error(err))
+		return nil, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return wallets, nil
 }
 
 func (c *Currency) getCurrencyRate(ctx context.Context, currencyCode string) (float32, error) {
