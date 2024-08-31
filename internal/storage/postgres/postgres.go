@@ -48,14 +48,37 @@ func New() (*Storage, error) {
 }
 
 func (s *Storage) SaveUser(ctx context.Context, user authModels.User) (uint64, error) {
-	result := s.db.WithContext(ctx).Create(&user)
+	ctxTx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if err := recover(); err != nil {
+			ctxTx.Rollback()
+		}
+	}()
+
+	if err := ctxTx.Error; err != nil {
+		return 0, err
+	}
+
+	result := ctxTx.Create(&user)
 
 	var psqlErr *pgconn.PgError
 	if errors.As(result.Error, &psqlErr) && psqlErr.Code == pgerrcode.UniqueViolation {
+		ctxTx.Rollback()
 		return 0, storage.ErrUserAlreadyExists
 	}
 	if result.Error != nil {
+		ctxTx.Rollback()
 		return 0, result.Error
+	}
+
+	if err := InitializeCurrency(ctxTx, user.ID); err != nil {
+		ctxTx.Rollback()
+		return 0, err
+	}
+
+	if err := ctxTx.Commit().Error; err != nil {
+		ctxTx.Rollback()
+		return 0, err
 	}
 
 	return user.ID, nil
@@ -64,7 +87,9 @@ func (s *Storage) SaveUser(ctx context.Context, user authModels.User) (uint64, e
 func (s *Storage) User(ctx context.Context, email string) (authModels.User, error) {
 	var user authModels.User
 
-	result := s.db.WithContext(ctx).First(&user, "email = ?", email)
+	dbCtx := s.db.WithContext(ctx)
+
+	result := dbCtx.First(&user, "email = ?", email)
 	if result.RowsAffected == 0 {
 		return authModels.User{}, storage.ErrUserNotFound
 	}
@@ -79,19 +104,37 @@ func (s *Storage) User(ctx context.Context, email string) (authModels.User, erro
 func (s *Storage) UpdateUser(ctx context.Context, email string, newPassword []byte) error {
 	var user authModels.User
 
-	result := s.db.WithContext(ctx).First(&user, "email = ?", email)
+	ctxTx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if err := recover(); err != nil {
+			ctxTx.Rollback()
+		}
+	}()
+
+	if err := ctxTx.Error; err != nil {
+		return err
+	}
+
+	result := ctxTx.First(&user, "email = ?", email)
 	if result.RowsAffected == 0 {
+		ctxTx.Rollback()
 		return storage.ErrUserNotFound
 	}
 
 	if result.Error != nil {
+		ctxTx.Rollback()
 		return result.Error
 	}
 
 	user.PassHash = newPassword
-	result = s.db.WithContext(ctx).Save(&user)
-	if result.Error != nil {
+	if result = ctxTx.Save(&user); result.Error != nil {
+		ctxTx.Rollback()
 		return result.Error
+	}
+
+	if err := ctxTx.Commit().Error; err != nil {
+		ctxTx.Rollback()
+		return err
 	}
 
 	return nil
@@ -100,28 +143,45 @@ func (s *Storage) UpdateUser(ctx context.Context, email string, newPassword []by
 func (s *Storage) DeleteUser(ctx context.Context, email string) error {
 	var user authModels.User
 
-	result := s.db.WithContext(ctx).First(&user, "email = ?", email)
+	ctxTx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if err := recover(); err != nil {
+			ctxTx.Rollback()
+		}
+	}()
+
+	if err := ctxTx.Error; err != nil {
+		return err
+	}
+
+	result := ctxTx.First(&user, "email = ?", email)
 	if result.RowsAffected == 0 {
+		ctxTx.Rollback()
 		return storage.ErrUserNotFound
 	}
 
 	if result.Error != nil {
+		ctxTx.Rollback()
 		return result.Error
 	}
 
-	result = s.db.WithContext(ctx).Delete(&user)
-
-	if result.Error != nil {
+	if result = ctxTx.Delete(&user); result.Error != nil {
+		ctxTx.Rollback()
 		return result.Error
+	}
+
+	if err := ctxTx.Commit().Error; err != nil {
+		ctxTx.Rollback()
+		return err
 	}
 
 	return nil
 }
 
-func (s *Storage) InitializeCurrency(ctx context.Context, userId uint64) error {
+func InitializeCurrency(ctxTx *gorm.DB, userId uint64) error {
 	var currencies []currencyModels.Currency
 
-	result := s.db.WithContext(ctx).Find(&currencies)
+	result := ctxTx.Find(&currencies)
 	if result.RowsAffected == 0 {
 		return storage.ErrUserNotFound
 	}
@@ -139,7 +199,7 @@ func (s *Storage) InitializeCurrency(ctx context.Context, userId uint64) error {
 		userWallets = append(userWallets, userWallet)
 	}
 
-	result = s.db.WithContext(ctx).Create(userWallets)
+	result = ctxTx.Create(userWallets)
 	if result.Error != nil {
 		return result.Error
 	}

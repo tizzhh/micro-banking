@@ -6,5 +6,6 @@ type User struct {
 	PassHash  []byte
 	FirstName string
 	LastName  string
-	Age       int32
+	Balance   uint64 // In USD cents
+	Age       uint32
 }

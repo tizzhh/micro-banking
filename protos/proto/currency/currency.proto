@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package currency;
+
+import "buf/validate/validate.proto";
+
+option go_package = "tizzhh.currency.v1;currencyv1";
+
+service Currency {
+    rpc Buy(BuyRequest) returns (BuyResponse);
+    rpc Sell(SellRequest) returns (SellResponse);
+}   
+
+message BuyRequest {
+    string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];
+    string currency_code = 2 [(buf.validate.field).string.len = 3];
+    uint64 amount = 3 [(buf.validate.field).uint64.gte = 0];
+}
+
+message BuyResponse {
+    string email = 1;
+    float bought = 2;
+}
+
+message SellRequest {
+    string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];
+    string currency_code = 2 [(buf.validate.field).string.len = 3];
+    uint64 amount = 3 [(buf.validate.field).uint64.gte = 0];
+}
+
+message SellResponse {
+    string email = 1;
+    float sold = 2;
+}

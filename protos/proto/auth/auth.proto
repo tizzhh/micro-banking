@@ -18,7 +18,7 @@ message RegisterRequest {
     string password = 2 [(buf.validate.field).string.min_len = 5, (buf.validate.field).string.max_len = 100];
     string first_name = 3 [(buf.validate.field).string.min_len = 2, (buf.validate.field).string.max_len = 100];
     string last_name = 4 [(buf.validate.field).string.min_len = 2, (buf.validate.field).string.max_len = 100];
-    int32 age = 5 [(buf.validate.field).int32.gte = 18, (buf.validate.field).int32.lt = 150];
+    uint32 age = 5 [(buf.validate.field).uint32.gte = 18, (buf.validate.field).uint32.lt = 150];
 }
 
 message RegisterResponse {

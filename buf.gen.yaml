@@ -7,7 +7,7 @@ managed:
     except:
       - buf.build/bufbuild/protovalidate
 plugins:
-  - name: go # Synonym with: protoc-gen-<name>
+  - name: go
     out: gen/go
     opt: paths=source_relative
   - name: go-grpc

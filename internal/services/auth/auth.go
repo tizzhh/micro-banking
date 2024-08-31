@@ -15,26 +15,24 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func New(log *slog.Logger, tokenTTL time.Duration, userSaver UserSaver, userProvider UserProvider, userUpdater UserUpdater, userDeleter UserDeleter, currencyInitializer CurrencyInitializer) *Auth {
+func New(log *slog.Logger, tokenTTL time.Duration, userSaver UserSaver, userProvider UserProvider, userUpdater UserUpdater, userDeleter UserDeleter) *Auth {
 	return &Auth{
-		log:                 log,
-		tokenTTL:            tokenTTL,
-		userSaver:           userSaver,
-		userProvider:        userProvider,
-		userUpdater:         userUpdater,
-		userDeleter:         userDeleter,
-		currencyInitializer: currencyInitializer,
+		log:          log,
+		tokenTTL:     tokenTTL,
+		userSaver:    userSaver,
+		userProvider: userProvider,
+		userUpdater:  userUpdater,
+		userDeleter:  userDeleter,
 	}
 }
 
 type Auth struct {
-	log                 *slog.Logger
-	tokenTTL            time.Duration
-	userSaver           UserSaver
-	userProvider        UserProvider
-	userUpdater         UserUpdater
-	userDeleter         UserDeleter
-	currencyInitializer CurrencyInitializer
+	log          *slog.Logger
+	tokenTTL     time.Duration
+	userSaver    UserSaver
+	userProvider UserProvider
+	userUpdater  UserUpdater
+	userDeleter  UserDeleter
 }
 
 type UserSaver interface {
@@ -53,11 +51,7 @@ type UserDeleter interface {
 	DeleteUser(ctx context.Context, email string) error
 }
 
-type CurrencyInitializer interface {
-	InitializeCurrency(ctx context.Context, userId uint64) error
-}
-
-func (a *Auth) Register(ctx context.Context, email string, password string, firstName string, lastName string, age int32) (uint64, error) {
+func (a *Auth) Register(ctx context.Context, email string, password string, firstName string, lastName string, age uint32) (uint64, error) {
 	const caller = "services.auth.Register"
 
 	log := sl.AddCaller(a.log, caller)
@@ -82,23 +76,13 @@ func (a *Auth) Register(ctx context.Context, email string, password string, firs
 	if err != nil {
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
 			log.Warn("user already exists", sl.Error(err))
-			return 0, auth.ErrUserAlreadyExists
+			return 0, fmt.Errorf("%s: %w", caller, auth.ErrUserAlreadyExists)
 		}
 		log.Error("failed to save user", sl.Error(err))
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	log.Info("user saved")
-
-	log.Info("initializing currency for user")
-
-	err = a.currencyInitializer.InitializeCurrency(ctx, newUserId)
-	if err != nil {
-		log.Error("failed to initialize currency", sl.Error(err))
-		return 0, fmt.Errorf("%s: %w", caller, err)
-	}
-
-	log.Info("currency intialized successfully")
 
 	return newUserId, nil
 }
@@ -188,7 +172,7 @@ func (a *Auth) getUserAndCheckPassword(ctx context.Context, email string, passwo
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Warn("user not found", sl.Error(err))
-			return models.User{}, auth.ErrInvalidCredentials
+			return models.User{}, fmt.Errorf("%s: %w", caller, auth.ErrInvalidCredentials)
 		}
 		log.Error("failed to get user", sl.Error(err))
 		return models.User{}, fmt.Errorf("%s: %w", caller, err)
