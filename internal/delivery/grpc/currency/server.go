@@ -60,7 +60,7 @@ func (s *serverApi) Sell(ctx context.Context, req *currencyv1.SellRequest) (*cur
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	soldAmount, err := s.currency.Buy(ctx, req.GetEmail(), req.GetCurrencyCode(), req.GetAmount())
+	soldAmount, err := s.currency.Sell(ctx, req.GetEmail(), req.GetCurrencyCode(), req.GetAmount())
 	if err != nil {
 		if errors.Is(err, currency.ErrNotEnoughCurrency) {
 			return nil, status.Error(codes.FailedPrecondition, currency.ErrNotEnoughCurrency.Error())

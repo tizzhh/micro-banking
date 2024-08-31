@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	// authapp "github.com/tizzhh/micro-banking/internal/app/auth"
+	currencyapp "github.com/tizzhh/micro-banking/internal/app/currency"
 	"github.com/tizzhh/micro-banking/internal/config"
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 )
@@ -15,14 +15,14 @@ func main() {
 	log := sl.Get()
 	log.Info("starting auth app")
 
-	// authapp := authapp.New(log, cfg.GRPC.Port, cfg.TokenTTL)
-	// go authapp.GRPCServer.MustRun()
+	currencyApp := currencyapp.New(log, cfg.GRPC.Port)
+	go currencyApp.GRPCServer.MustRun()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	<-stop
 
-	authapp.GRPCServer.Stop()
+	currencyApp.GRPCServer.Stop()
 	log.Info("auth app stopped")
 }

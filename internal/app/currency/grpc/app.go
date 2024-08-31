@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"time"
 
 	currencygrpc "github.com/tizzhh/micro-banking/internal/delivery/grpc/currency"
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
@@ -17,7 +16,7 @@ type App struct {
 	port       int
 }
 
-func New(log *slog.Logger, port int, tokenTTL time.Duration, currencyService currencygrpc.Currency) *App {
+func New(log *slog.Logger, port int, currencyService currencygrpc.Currency) *App {
 	grpcServer := grpc.NewServer()
 
 	currencygrpc.Register(grpcServer, currencyService)

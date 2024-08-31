@@ -12,10 +12,11 @@ import (
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 )
 
-func New(log *slog.Logger, currencyOperator CurrencyOperator) *Currency {
+func New(log *slog.Logger, currencyOperator CurrencyOperator, userProvider UserProvider) *Currency {
 	return &Currency{
 		log:              log,
 		currencyOperator: currencyOperator,
+		userProvider:     userProvider,
 	}
 }
 
@@ -26,9 +27,9 @@ type Currency struct {
 }
 
 type CurrencyOperator interface {
-	Buy(ctx context.Context, email, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
-	Sell(ctx context.Context, email, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
-	CurrencyBalance(ctx context.Context, currencyCode string) (uint64, error)
+	Buy(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
+	Sell(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error
+	CurrencyBalance(ctx context.Context, user models.User, currencyCode string) (uint64, error)
 	RatesUpdater(ctx context.Context) error
 }
 
@@ -63,7 +64,12 @@ func (c *Currency) getUser(ctx context.Context, email string) (models.User, erro
 
 	log := sl.AddCaller(c.log, caller)
 
+	log.Info("getting user")
+
 	user, err := c.userProvider.User(ctx, email)
+
+	log.Info("user found")
+
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Warn("user not found", sl.Error(err))
@@ -88,6 +94,8 @@ func (c *Currency) Buy(ctx context.Context, email string, currencyCode string, a
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
+	log.Info("user found")
+
 	currencyPrice, exists := currencyPricesTEMP[currencyCode]
 	if !exists {
 		log.Warn("currency code not found")
@@ -101,14 +109,26 @@ func (c *Currency) Buy(ctx context.Context, email string, currencyCode string, a
 		return 0, fmt.Errorf("%s: %w", caller, currency.ErrNotEnoughMoney)
 	}
 
-	currencyBalance, err := c.currencyOperator.CurrencyBalance(ctx, currencyCode)
+	log.Info("getting currency balance")
+
+	currencyBalance, err := c.currencyOperator.CurrencyBalance(ctx, user, currencyCode)
 	if err != nil {
 		log.Error("failed to get currency balance", sl.Error(err))
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
+	log.Info("saving balance")
+
 	newBalance, newCurrencyBalance := performOperation(user.Balance, currencyBalance, totalCost, true)
-	if err := c.currencyOperator.Buy(ctx, email, currencyCode, newBalance, newCurrencyBalance); err != nil {
+	if err := c.currencyOperator.Buy(ctx, user, currencyCode, newBalance, newCurrencyBalance); err != nil {
+		if errors.Is(err, storage.ErrCurrencyCodeNotFound) {
+			log.Warn("currency code not found")
+			return 0, fmt.Errorf("%s: %w", caller, currency.ErrCurrencyCodeNotFound)
+		}
+		if errors.Is(err, storage.ErrWalletNotFound) {
+			log.Warn("currency code not found")
+			return 0, fmt.Errorf("%s: %w", caller, currency.ErrWalletNotFound)
+		}
 		log.Error("failed to update wallet and user balance", sl.Error(err))
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
@@ -127,6 +147,8 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 
 	log.Info("selling currency")
 
+	log.Info("user found")
+
 	user, err := c.getUser(ctx, email)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", caller, err)
@@ -140,7 +162,9 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 
 	totalCost := uint64(currencyPrice*priceToCentsConversion) * amount
 
-	currencyBalance, err := c.currencyOperator.CurrencyBalance(ctx, currencyCode)
+	log.Info("getting currency balance")
+
+	currencyBalance, err := c.currencyOperator.CurrencyBalance(ctx, user, currencyCode)
 	if err != nil {
 		log.Error("failed to get currency balance", sl.Error(err))
 		return 0, fmt.Errorf("%s: %w", caller, err)
@@ -151,8 +175,18 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 		return 0, fmt.Errorf("%s: %w", caller, currency.ErrNotEnoughCurrency)
 	}
 
+	log.Info("saving balance")
+
 	newBalance, newCurrencyBalance := performOperation(user.Balance, currencyBalance, totalCost, false)
-	if err := c.currencyOperator.Sell(ctx, email, currencyCode, newBalance, newCurrencyBalance); err != nil {
+	if err := c.currencyOperator.Sell(ctx, user, currencyCode, newBalance, newCurrencyBalance); err != nil {
+		if errors.Is(err, storage.ErrCurrencyCodeNotFound) {
+			log.Warn("currency code not found")
+			return 0, fmt.Errorf("%s: %w", caller, currency.ErrCurrencyCodeNotFound)
+		}
+		if errors.Is(err, storage.ErrWalletNotFound) {
+			log.Warn("currency code not found")
+			return 0, fmt.Errorf("%s: %w", caller, currency.ErrWalletNotFound)
+		}
 		log.Error("failed to update wallet and user balance", sl.Error(err))
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}

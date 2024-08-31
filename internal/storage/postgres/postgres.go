@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/tizzhh/micro-banking/internal/config"
+	"github.com/tizzhh/micro-banking/internal/domain/auth/models"
 	authModels "github.com/tizzhh/micro-banking/internal/domain/auth/models"
 	currencyModels "github.com/tizzhh/micro-banking/internal/domain/currency/models"
 	"github.com/tizzhh/micro-banking/internal/storage"
@@ -48,6 +49,8 @@ func New() (*Storage, error) {
 }
 
 func (s *Storage) SaveUser(ctx context.Context, user authModels.User) (uint64, error) {
+	const caller = "storage.postgres.SaveUser"
+
 	ctxTx := s.db.WithContext(ctx).Begin()
 	defer func() {
 		if err := recover(); err != nil {
@@ -56,7 +59,7 @@ func (s *Storage) SaveUser(ctx context.Context, user authModels.User) (uint64, e
 	}()
 
 	if err := ctxTx.Error; err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	result := ctxTx.Create(&user)
@@ -64,44 +67,48 @@ func (s *Storage) SaveUser(ctx context.Context, user authModels.User) (uint64, e
 	var psqlErr *pgconn.PgError
 	if errors.As(result.Error, &psqlErr) && psqlErr.Code == pgerrcode.UniqueViolation {
 		ctxTx.Rollback()
-		return 0, storage.ErrUserAlreadyExists
+		return 0, fmt.Errorf("%s: %w", caller, storage.ErrUserAlreadyExists)
 	}
 	if result.Error != nil {
 		ctxTx.Rollback()
-		return 0, result.Error
+		return 0, fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	if err := InitializeCurrency(ctxTx, user.ID); err != nil {
 		ctxTx.Rollback()
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	if err := ctxTx.Commit().Error; err != nil {
 		ctxTx.Rollback()
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	return user.ID, nil
 }
 
 func (s *Storage) User(ctx context.Context, email string) (authModels.User, error) {
+	const caller = "storage.postgres.User"
+
 	var user authModels.User
 
 	dbCtx := s.db.WithContext(ctx)
 
 	result := dbCtx.First(&user, "email = ?", email)
 	if result.RowsAffected == 0 {
-		return authModels.User{}, storage.ErrUserNotFound
+		return authModels.User{}, fmt.Errorf("%s: %w", caller, storage.ErrUserNotFound)
 	}
 
 	if result.Error != nil {
-		return authModels.User{}, result.Error
+		return authModels.User{}, fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	return user, nil
 }
 
 func (s *Storage) UpdateUser(ctx context.Context, email string, newPassword []byte) error {
+	const caller = "storage.postgres.UpdateUser"
+
 	var user authModels.User
 
 	ctxTx := s.db.WithContext(ctx).Begin()
@@ -112,35 +119,37 @@ func (s *Storage) UpdateUser(ctx context.Context, email string, newPassword []by
 	}()
 
 	if err := ctxTx.Error; err != nil {
-		return err
+		return fmt.Errorf("%s: %w", caller, err)
 	}
 
 	result := ctxTx.First(&user, "email = ?", email)
 	if result.RowsAffected == 0 {
 		ctxTx.Rollback()
-		return storage.ErrUserNotFound
+		return fmt.Errorf("%s: %w", caller, storage.ErrUserNotFound)
 	}
 
 	if result.Error != nil {
 		ctxTx.Rollback()
-		return result.Error
+		return fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	user.PassHash = newPassword
 	if result = ctxTx.Save(&user); result.Error != nil {
 		ctxTx.Rollback()
-		return result.Error
+		return fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	if err := ctxTx.Commit().Error; err != nil {
 		ctxTx.Rollback()
-		return err
+		return fmt.Errorf("%s: %w", caller, err)
 	}
 
 	return nil
 }
 
 func (s *Storage) DeleteUser(ctx context.Context, email string) error {
+	const caller = "storage.postgres.DeleteUser"
+
 	var user authModels.User
 
 	ctxTx := s.db.WithContext(ctx).Begin()
@@ -151,43 +160,45 @@ func (s *Storage) DeleteUser(ctx context.Context, email string) error {
 	}()
 
 	if err := ctxTx.Error; err != nil {
-		return err
+		return fmt.Errorf("%s: %w", caller, err)
 	}
 
 	result := ctxTx.First(&user, "email = ?", email)
 	if result.RowsAffected == 0 {
 		ctxTx.Rollback()
-		return storage.ErrUserNotFound
+		return fmt.Errorf("%s: %w", caller, storage.ErrUserNotFound)
 	}
 
 	if result.Error != nil {
 		ctxTx.Rollback()
-		return result.Error
+		return fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	if result = ctxTx.Delete(&user); result.Error != nil {
 		ctxTx.Rollback()
-		return result.Error
+		return fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	if err := ctxTx.Commit().Error; err != nil {
 		ctxTx.Rollback()
-		return err
+		return fmt.Errorf("%s: %w", caller, err)
 	}
 
 	return nil
 }
 
 func InitializeCurrency(ctxTx *gorm.DB, userId uint64) error {
+	const caller = "storage.postgres.InitializeCurrency"
+
 	var currencies []currencyModels.Currency
 
 	result := ctxTx.Find(&currencies)
 	if result.RowsAffected == 0 {
-		return storage.ErrUserNotFound
+		return fmt.Errorf("%s: %w", caller, storage.ErrUserNotFound)
 	}
 
 	if result.Error != nil {
-		return result.Error
+		return fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
 	userWallets := make([]*currencyModels.UserWallet, 0, len(currencies))
@@ -201,8 +212,125 @@ func InitializeCurrency(ctxTx *gorm.DB, userId uint64) error {
 
 	result = ctxTx.Create(userWallets)
 	if result.Error != nil {
-		return result.Error
+		return fmt.Errorf("%s: %w", caller, result.Error)
 	}
 
+	return nil
+}
+
+func getCurrency(ctxTx *gorm.DB, currencyCode string) (currencyModels.Currency, error) {
+	const caller = "storage.postgres.getCurrency"
+
+	var currency currencyModels.Currency
+
+	result := ctxTx.Where(currencyModels.Currency{Code: currencyCode}).First(&currency)
+	if result.RowsAffected == 0 {
+		return currencyModels.Currency{}, fmt.Errorf("%s: %w", caller, storage.ErrCurrencyCodeNotFound)
+	}
+	if result.Error != nil {
+		return currencyModels.Currency{}, fmt.Errorf("%s: %w", caller, result.Error)
+	}
+
+	return currency, nil
+}
+
+func getWallet(ctxTx *gorm.DB, user models.User, currency currencyModels.Currency) (currencyModels.UserWallet, error) {
+	const caller = "storage.postgres.getWallet"
+
+	var wallet currencyModels.UserWallet
+	result := ctxTx.Where(currencyModels.UserWallet{User: user, Currency: currency}).First(&wallet)
+	if result.RowsAffected == 0 {
+		return currencyModels.UserWallet{}, fmt.Errorf("%s: %w", caller, storage.ErrWalletNotFound)
+	}
+	if result.Error != nil {
+		return currencyModels.UserWallet{}, fmt.Errorf("%s: %w", caller, result.Error)
+	}
+
+	return wallet, nil
+}
+
+func (s *Storage) performBuySellOperation(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
+	const caller = "storage.postgres.performBuySellOperation"
+
+	ctxTx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if err := recover(); err != nil {
+			ctxTx.Rollback()
+		}
+	}()
+
+	currency, err := getCurrency(ctxTx, currencyCode)
+	if err != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	wallet, err := getWallet(ctxTx, user, currency)
+	if err != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	fmt.Println(newUserBalance, newCurrencyBalance)
+
+	user.Balance = newUserBalance
+	if err := ctxTx.Save(&user).Error; err != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	wallet.Balance = newCurrencyBalance
+	if err := ctxTx.Save(&wallet).Error; err != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	if err := ctxTx.Commit().Error; err != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return nil
+}
+
+func (s *Storage) Buy(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
+	const caller = "storage.postgres.Buy"
+
+	if err := s.performBuySellOperation(ctx, user, currencyCode, newUserBalance, newCurrencyBalance); err != nil {
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return nil
+}
+
+func (s *Storage) Sell(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
+	const caller = "storage.postgres.Sell"
+
+	if err := s.performBuySellOperation(ctx, user, currencyCode, newUserBalance, newCurrencyBalance); err != nil {
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return nil
+}
+
+func (s *Storage) CurrencyBalance(ctx context.Context, user models.User, currencyCode string) (uint64, error) {
+	const caller = "storage.postgres.CurrencyBalance"
+
+	ctxDb := s.db.WithContext(ctx)
+	currency, err := getCurrency(ctxDb, currencyCode)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	wallet, err := getWallet(ctxDb, user, currency)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", caller, err)
+	}
+
+	return wallet.Balance, nil
+}
+
+// TODO REPLACE WITH TARANTOOL
+func (s *Storage) RatesUpdater(ctx context.Context) error {
 	return nil
 }

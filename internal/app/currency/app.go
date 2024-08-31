@@ -2,7 +2,6 @@ package currencyapp
 
 import (
 	"log/slog"
-	"time"
 
 	grpcapp "github.com/tizzhh/micro-banking/internal/app/currency/grpc"
 	"github.com/tizzhh/micro-banking/internal/services/currency"
@@ -13,16 +12,16 @@ type App struct {
 	GRPCServer *grpcapp.App
 }
 
-func New(log *slog.Logger, port int, tokenTTL time.Duration) *App {
+func New(log *slog.Logger, port int) *App {
 	storage, err := postgres.Get()
 
 	if err != nil {
 		panic(err)
 	}
 
-	authService := currency.New(log, tokenTTL, storage, storage, storage, storage, storage)
+	currencyService := currency.New(log, storage, storage)
 
-	grpcApp := grpcapp.New(log, port, tokenTTL, authService)
+	grpcApp := grpcapp.New(log, port, currencyService)
 
 	return &App{
 		GRPCServer: grpcApp,

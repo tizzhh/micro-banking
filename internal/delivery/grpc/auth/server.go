@@ -22,7 +22,7 @@ func Register(gRPC *grpc.Server, auth Auth) {
 }
 
 type Auth interface {
-	Register(ctx context.Context, email string, password string, firstName string, lastName string, age int32) (uint64, error)
+	Register(ctx context.Context, email string, password string, firstName string, lastName string, age uint32) (uint64, error)
 	Login(ctx context.Context, email string, password string) (string, error)
 	UpdatePassword(ctx context.Context, email string, oldPassword string, newPassword string) error
 	Unregister(ctx context.Context, email string, password string) error
