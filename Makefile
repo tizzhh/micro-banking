@@ -18,4 +18,4 @@ bank_service: clean
 	go build -o $@ cmd/bank/main.go 
 
 clean:
-	rm -rf auth_service currency_service bank_service
+	rm -rf auth_service currency_service bank_service mail_service

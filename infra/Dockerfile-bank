@@ -1,0 +1,14 @@
+FROM golang:1.23 AS builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o bank_service cmd/bank/main.go
+
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
+RUN chmod +x ./bank_service
+RUN chmod +x ./infra/entrypoint.sh
+EXPOSE 8080
+# CMD [ "/bank_service" ]

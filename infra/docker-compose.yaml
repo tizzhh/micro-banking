@@ -1,0 +1,124 @@
+version: '3'
+
+services:
+  kafka:
+    image: apache/kafka:latest
+    restart: always
+    ports:
+      - 9092:9092
+    networks:
+      - micro-bank
+    environment:
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_NODE_ID=1
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - 6379:6379
+    networks:
+      - micro-bank
+  
+  postgres:
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - 5432:5432
+    networks:
+      - micro-bank
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U news_user -d news"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bank:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile-bank
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+    volumes:
+      - ../config/prod.yaml:/config/prod.yaml
+    entrypoint: infra/entrypoint.sh
+    environment:
+      - CONFIG_PATH=./config/prod.yaml
+    networks:
+      - micro-bank
+
+  auth:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile-auth
+    restart: always
+    ports:
+      - 8081:8081
+    depends_on:
+      - bank
+    volumes:
+      - ../config/prod.yaml:/config/prod.yaml
+    environment:
+      - CONFIG_PATH=./config/prod.yaml
+    networks:
+      - micro-bank
+
+  currency:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile-currency
+    restart: always
+    ports:
+      - 8082:8082
+    depends_on:
+      - bank
+    volumes:
+      - ../config/prod.yaml:/config/prod.yaml
+    environment:
+      - CONFIG_PATH=./config/prod.yaml
+    networks:
+      - micro-bank
+  
+  mail:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile-mail
+    restart: always
+    depends_on:
+      - kafka
+      - currency
+      - bank
+    volumes:
+      - ../config/prod.yaml:/config/prod.yaml
+    environment:
+      - CONFIG_PATH=./config/prod.yaml
+    networks:
+      - micro-bank
+
+volumes:
+  postgres_data:
+  kafka_data:
+
+networks:
+  micro-bank:
+    driver: bridge

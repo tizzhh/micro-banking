@@ -1,3 +1,4 @@
 prod.yaml
 local.yaml
 env/
+.env

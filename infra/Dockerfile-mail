@@ -1,0 +1,12 @@
+FROM golang:1.23 AS builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o mail_service cmd/mail/main.go 
+
+FROM alpine:latest
+COPY --from=builder /app/mail_service /mail_service
+RUN chmod +x /mail_service
+CMD [ "/mail_service" ]

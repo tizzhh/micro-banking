@@ -19,6 +19,7 @@ type Config struct {
 	Clients     Clients       `yaml:"clients" env-required:"true"`
 	Http        Http          `yaml:"http" env-required:"true"`
 	Kafka       Kafka         `yaml:"kafka" env-required:"true"`
+	SecretKey   string        `yaml:"secret_key" env-required:"true"`
 }
 
 type Kafka struct {
@@ -107,21 +108,20 @@ func Get() *Config {
 	return configSingleton
 }
 
+const (
+	defaultConfigPath = "./config/local.yaml"
+)
+
 func MustLoad() *Config {
 	configPath, ok := os.LookupEnv("CONFIG_PATH")
 	if !ok {
-		panic("CONFIG_PATH is not set")
+		configPath = defaultConfigPath
 	}
 	if configPath == "" {
 		panic("config path is empty")
 	}
 	if _, err := os.Stat(configPath); err != nil {
 		panic("config file does not exist")
-	}
-
-	_, ok = os.LookupEnv("SECRET_KEY")
-	if !ok {
-		panic("SECRET_KEY for JWT is not set")
 	}
 
 	var cfg Config

@@ -1,19 +1,24 @@
 package jwt
 
 import (
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/tizzhh/micro-banking/internal/config"
 	"github.com/tizzhh/micro-banking/internal/domain/auth/models"
 )
 
 type JWT struct {
-	tokenTTL time.Duration
+	tokenTTL  time.Duration
+	secretKey string
 }
 
 func New(tokenTTL time.Duration) *JWT {
-	return &JWT{tokenTTL: tokenTTL}
+	cfg := config.Get()
+	return &JWT{
+		tokenTTL:  tokenTTL,
+		secretKey: cfg.SecretKey,
+	}
 }
 
 func (j *JWT) NewToken(user models.User) (string, error) {
@@ -25,9 +30,7 @@ func (j *JWT) NewToken(user models.User) (string, error) {
 		},
 	)
 
-	secretKey := os.Getenv("SECRET-KEY")
-
-	tokenString, err := token.SignedString([]byte(secretKey))
+	tokenString, err := token.SignedString([]byte(j.secretKey))
 	if err != nil {
 		return "", err
 	}
@@ -35,10 +38,8 @@ func (j *JWT) NewToken(user models.User) (string, error) {
 }
 
 func (j *JWT) CheckToken(token string) (*jwt.Token, error) {
-	secretKey := os.Getenv("SECRET-KEY")
-
 	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return []byte(secretKey), nil
+		return []byte(j.secretKey), nil
 	})
 
 	if err != nil {

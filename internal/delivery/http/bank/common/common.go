@@ -44,6 +44,8 @@ func HandleGrpcError(log *slog.Logger, w http.ResponseWriter, r *http.Request, e
 		response.RespondWithError(w, r, grpcErr.Message(), http.StatusBadRequest)
 	case codes.FailedPrecondition:
 		response.RespondWithError(w, r, grpcErr.Message(), http.StatusBadRequest)
+	case codes.NotFound:
+		response.RespondWithError(w, r, grpcErr.Message(), http.StatusNotFound)
 	default:
 		response.RespondWithError(w, r, "internal error", http.StatusInternalServerError)
 	}
