@@ -35,6 +35,12 @@ type Balance interface {
 	Withdraw(ctx context.Context, email string, amount float32) (float32, error)
 }
 
+func (ba *BankApi) Liveness() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		response.ReponsdWithOK(w, r, "I'm alive!", http.StatusOK)
+	}
+}
+
 func (ba *BankApi) Deposit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.currency.handler.AddMoneyToBalance"

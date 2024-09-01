@@ -16,10 +16,10 @@ type App struct {
 	port       int
 }
 
-func New(log *slog.Logger, port int, currencyService currencygrpc.Currency) *App {
+func New(log *slog.Logger, port int, currencyService currencygrpc.Currency, producer currencygrpc.Producer) *App {
 	grpcServer := grpc.NewServer()
 
-	currencygrpc.Register(grpcServer, currencyService)
+	currencygrpc.Register(grpcServer, currencyService, producer, log)
 
 	return &App{
 		log:        log,

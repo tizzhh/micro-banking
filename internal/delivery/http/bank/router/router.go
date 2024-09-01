@@ -66,5 +66,9 @@ func New(
 		})
 	})
 
+	router.Route("/v1", func(r chi.Router) {
+		r.Method(http.MethodGet, "/liveness", bankApi.Liveness())
+	})
+
 	return router
 }

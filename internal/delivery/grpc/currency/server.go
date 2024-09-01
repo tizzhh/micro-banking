@@ -3,11 +3,14 @@ package currency
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 
 	"github.com/bufbuild/protovalidate-go"
 	currencyv1 "github.com/tizzhh/micro-banking/gen/go/protos/proto/currency"
 	"github.com/tizzhh/micro-banking/internal/domain/currency/models"
 	currency "github.com/tizzhh/micro-banking/internal/services/currency/errors"
+	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,10 +19,16 @@ import (
 type serverApi struct {
 	currencyv1.UnimplementedCurrencyServer
 	currency Currency
+	producer Producer
+	log      *slog.Logger
 }
 
-func Register(gRPC *grpc.Server, currency Currency) {
-	currencyv1.RegisterCurrencyServer(gRPC, &serverApi{currency: currency})
+func Register(gRPC *grpc.Server, currency Currency, producer Producer, log *slog.Logger) {
+	currencyv1.RegisterCurrencyServer(gRPC, &serverApi{currency: currency, producer: producer, log: log})
+}
+
+type Producer interface {
+	Produce(emailAddr string, msg string) error
 }
 
 type Currency interface {
@@ -29,6 +38,9 @@ type Currency interface {
 }
 
 func (s *serverApi) Buy(ctx context.Context, req *currencyv1.BuyRequest) (*currencyv1.BuyResponse, error) {
+	const caller = "delivery.grpc.currency.buy"
+	log := sl.AddCaller(s.log, caller)
+
 	validator, err := protovalidate.New()
 	if err != nil {
 		return nil, status.Error(codes.Internal, currency.ErrInternal.Error())
@@ -52,10 +64,17 @@ func (s *serverApi) Buy(ctx context.Context, req *currencyv1.BuyRequest) (*curre
 		return nil, status.Error(codes.Internal, currency.ErrInternal.Error())
 	}
 
+	if err = s.producer.Produce(req.GetEmail(), fmt.Sprintf("Sucessfully bought %f %s", boughtAmount, req.GetCurrencyCode())); err != nil {
+		log.Error("failed to produce", sl.Error(err))
+	}
+
 	return &currencyv1.BuyResponse{Email: req.GetEmail(), Bought: boughtAmount}, nil
 }
 
 func (s *serverApi) Sell(ctx context.Context, req *currencyv1.SellRequest) (*currencyv1.SellResponse, error) {
+	const caller = "delivery.grpc.currency.buy"
+	log := sl.AddCaller(s.log, caller)
+
 	validator, err := protovalidate.New()
 	if err != nil {
 		return nil, status.Error(codes.Internal, currency.ErrInternal.Error())
@@ -78,6 +97,11 @@ func (s *serverApi) Sell(ctx context.Context, req *currencyv1.SellRequest) (*cur
 		}
 		return nil, status.Error(codes.Internal, currency.ErrInternal.Error())
 	}
+
+	if err = s.producer.Produce(req.GetEmail(), fmt.Sprintf("Sucessfully sold %f %s", soldAmount, req.GetCurrencyCode())); err != nil {
+		log.Error("failed to produce", sl.Error(err))
+	}
+
 	return &currencyv1.SellResponse{Email: req.GetEmail(), Sold: soldAmount}, nil
 }
 

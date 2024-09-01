@@ -12,11 +12,12 @@ import (
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 )
 
-func New(log *slog.Logger, balanceOperator BalanceOperator, userProvider UserProvider) *Bank {
+func New(log *slog.Logger, balanceOperator BalanceOperator, userProvider UserProvider, producer Producer) *Bank {
 	return &Bank{
 		log:             log,
 		balanceOperator: balanceOperator,
 		userProvider:    userProvider,
+		producer:        producer,
 	}
 }
 
@@ -24,6 +25,16 @@ type Bank struct {
 	log             *slog.Logger
 	balanceOperator BalanceOperator
 	userProvider    UserProvider
+	producer        Producer
+}
+
+const (
+	DepositMsgTemplate    = "Sucessfully made a deposit. New account balance: %f"
+	WithdrawalMsgTemplate = "Sucessfully made a withdrawal. New account balance: %f"
+)
+
+type Producer interface {
+	Produce(emailAddr string, msg string) error
 }
 
 type BalanceOperator interface {
@@ -63,7 +74,12 @@ func (b *Bank) Deposit(ctx context.Context, email string, amount float32) (float
 	}
 
 	log.Info("deposit made")
-	return float32(newAmount / priceToCentsConversion), nil
+	newBalanceAmount := float32(newAmount / priceToCentsConversion)
+	if err = b.producer.Produce(email, fmt.Sprintf(DepositMsgTemplate, newBalanceAmount)); err != nil {
+		log.Error("failed to produce", sl.Error(err))
+	}
+
+	return newBalanceAmount, nil
 }
 
 func (b *Bank) Withdraw(ctx context.Context, email string, amount float32) (float32, error) {
@@ -95,5 +111,10 @@ func (b *Bank) Withdraw(ctx context.Context, email string, amount float32) (floa
 	}
 
 	log.Info("withdrawal made")
-	return float32(newAmount / priceToCentsConversion), nil
+	newBalanceAmount := float32(newAmount / priceToCentsConversion)
+	if err = b.producer.Produce(email, fmt.Sprintf(WithdrawalMsgTemplate, newBalanceAmount)); err != nil {
+		log.Error("failed to produce", sl.Error(err))
+	}
+
+	return newBalanceAmount, nil
 }

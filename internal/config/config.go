@@ -18,6 +18,23 @@ type Config struct {
 	Mail        Mail          `yaml:"mail" env-required:"true"`
 	Clients     Clients       `yaml:"clients" env-required:"true"`
 	Http        Http          `yaml:"http" env-required:"true"`
+	Kafka       Kafka         `yaml:"kafka" env-required:"true"`
+}
+
+type Kafka struct {
+	Producer KafkaProducer `yaml:"producer" env-required:"true"`
+	Consumer KafkaConsumer `yaml:"consumer" env-required:"true"`
+	Brokers  string        `yaml:"brokers" env-required:"true"`
+}
+
+type KafkaProducer struct {
+	ReturnSuccesses bool `yaml:"return_successes" env-default:"true"`
+	RequiredAcks    int  `yaml:"required_acks" env-default:"0"`
+	RetryMax        int  `yaml:"retry_max" env-default:"3"`
+}
+
+type KafkaConsumer struct {
+	ReturnErrors bool `yaml:"return_errors" env-default:"true"`
 }
 
 type Clients struct {

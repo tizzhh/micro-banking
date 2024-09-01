@@ -6,6 +6,7 @@ import (
 	"time"
 
 	grpcapp "github.com/tizzhh/micro-banking/internal/app/currency/grpc"
+	"github.com/tizzhh/micro-banking/internal/clients/kafka/producer"
 	"github.com/tizzhh/micro-banking/internal/services/currency"
 	"github.com/tizzhh/micro-banking/internal/storage/postgres"
 	"github.com/tizzhh/micro-banking/internal/storage/redis"
@@ -16,7 +17,7 @@ type App struct {
 	GRPCServer *grpcapp.App
 }
 
-func New(log *slog.Logger, port int, pingTimeout time.Duration, ratesApiTimeout time.Duration, storage *postgres.Storage) *App {
+func New(log *slog.Logger, port int, pingTimeout time.Duration, ratesApiTimeout time.Duration, storage *postgres.Storage, producer *producer.Producer) *App {
 	cache, err := redis.Get(log)
 	if err != nil {
 		panic(err)
@@ -31,7 +32,7 @@ func New(log *slog.Logger, port int, pingTimeout time.Duration, ratesApiTimeout 
 
 	currencyService := currency.New(log, storage, storage, cache, ratesQuerier)
 
-	grpcApp := grpcapp.New(log, port, currencyService)
+	grpcApp := grpcapp.New(log, port, currencyService, producer)
 
 	return &App{
 		GRPCServer: grpcApp,

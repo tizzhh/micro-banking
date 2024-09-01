@@ -3,12 +3,18 @@ package main
 import (
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/tizzhh/micro-banking/internal/app/bank"
+	"github.com/tizzhh/micro-banking/internal/clients/kafka/producer"
 	"github.com/tizzhh/micro-banking/internal/config"
 	"github.com/tizzhh/micro-banking/internal/storage/postgres"
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
+)
+
+const (
+	KafkaTopic = "Mail"
 )
 
 func main() {
@@ -22,7 +28,13 @@ func main() {
 		panic(err)
 	}
 
-	bankapp := bank.New(log, cfg, storage)
+	brokers := strings.Split(cfg.Kafka.Brokers, ";")
+	producer, err := producer.New(log, brokers, cfg.Kafka.Producer, KafkaTopic)
+	if err != nil {
+		panic(err)
+	}
+
+	bankapp := bank.New(log, cfg, storage, producer)
 
 	go bankapp.HTTPServer.MustRun()
 	stop := make(chan os.Signal, 1)
@@ -31,9 +43,12 @@ func main() {
 	<-stop
 
 	bankapp.HTTPServer.Stop()
-	err = storage.Stop()
-	if err != nil {
+	if err = storage.Stop(); err != nil {
 		log.Error("failed to stop storage", sl.Error(err))
 	}
+	if err = producer.Stop(); err != nil {
+		log.Error("failed to stop producer", sl.Error(err))
+	}
+
 	log.Info("bank app stopped")
 }

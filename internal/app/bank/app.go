@@ -6,6 +6,7 @@ import (
 	httpapp "github.com/tizzhh/micro-banking/internal/app/bank/http"
 	authgrpc "github.com/tizzhh/micro-banking/internal/clients/auth/grpc"
 	currencygrpc "github.com/tizzhh/micro-banking/internal/clients/currency/grpc"
+	"github.com/tizzhh/micro-banking/internal/clients/kafka/producer"
 	"github.com/tizzhh/micro-banking/internal/config"
 	"github.com/tizzhh/micro-banking/internal/services/bank"
 	"github.com/tizzhh/micro-banking/internal/storage/postgres"
@@ -15,7 +16,7 @@ type App struct {
 	HTTPServer *httpapp.App
 }
 
-func New(log *slog.Logger, cfg *config.Config, storage *postgres.Storage) *App {
+func New(log *slog.Logger, cfg *config.Config, storage *postgres.Storage, producer *producer.Producer) *App {
 	authv1Client, err := authgrpc.New(
 		log,
 		cfg.Clients.AuthClient.Addr,
@@ -36,7 +37,7 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.Storage) *App {
 		panic(err)
 	}
 
-	bank := bank.New(log, storage, storage)
+	bank := bank.New(log, storage, storage, producer)
 
 	app := httpapp.New(
 		log,
