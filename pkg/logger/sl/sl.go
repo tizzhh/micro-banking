@@ -34,6 +34,10 @@ func AddCaller(log *slog.Logger, caller string) *slog.Logger {
 	return log.With(slog.String("caller", caller))
 }
 
+func AddRequestId(log *slog.Logger, reqID string) *slog.Logger {
+	return log.With(slog.String("request_id", reqID))
+}
+
 func setupLogger() *slog.Logger {
 	cfg := config.Get()
 	switch cfg.Env {

@@ -1,4 +1,4 @@
-all: auth_service, currency_service
+all: clean auth_service currency_service bank_service
 
 generate: generate_auth
 
@@ -11,5 +11,11 @@ auth_service: clean
 currency_service: clean
 	go build -o $@ cmd/currency/main.go 
 
+mail_service: clean
+	go build -o $@ cmd/mail/main.go 
+
+bank_service: clean
+	go build -o $@ cmd/bank/main.go 
+
 clean:
-	rm -rf auth_service currency_service
+	rm -rf auth_service currency_service bank_service

@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/tizzhh/micro-banking/internal/config"
-	"github.com/tizzhh/micro-banking/internal/domain/auth/models"
 	authModels "github.com/tizzhh/micro-banking/internal/domain/auth/models"
 	currencyModels "github.com/tizzhh/micro-banking/internal/domain/currency/models"
 	"github.com/tizzhh/micro-banking/internal/storage"
@@ -234,7 +233,7 @@ func getCurrency(ctxTx *gorm.DB, currencyCode string) (currencyModels.Currency, 
 	return currency, nil
 }
 
-func getWallet(ctxTx *gorm.DB, user models.User, currency currencyModels.Currency) (currencyModels.UserWallet, error) {
+func getWallet(ctxTx *gorm.DB, user authModels.User, currency currencyModels.Currency) (currencyModels.UserWallet, error) {
 	const caller = "storage.postgres.getWallet"
 
 	var wallet currencyModels.UserWallet
@@ -249,7 +248,7 @@ func getWallet(ctxTx *gorm.DB, user models.User, currency currencyModels.Currenc
 	return wallet, nil
 }
 
-func (s *Storage) performBuySellOperation(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
+func (s *Storage) performBuySellOperation(ctx context.Context, user authModels.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
 	const caller = "storage.postgres.performBuySellOperation"
 
 	ctxTx := s.db.WithContext(ctx).Begin()
@@ -291,7 +290,7 @@ func (s *Storage) performBuySellOperation(ctx context.Context, user models.User,
 	return nil
 }
 
-func (s *Storage) Buy(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
+func (s *Storage) Buy(ctx context.Context, user authModels.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
 	const caller = "storage.postgres.Buy"
 
 	if err := s.performBuySellOperation(ctx, user, currencyCode, newUserBalance, newCurrencyBalance); err != nil {
@@ -301,7 +300,7 @@ func (s *Storage) Buy(ctx context.Context, user models.User, currencyCode string
 	return nil
 }
 
-func (s *Storage) Sell(ctx context.Context, user models.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
+func (s *Storage) Sell(ctx context.Context, user authModels.User, currencyCode string, newUserBalance, newCurrencyBalance uint64) error {
 	const caller = "storage.postgres.Sell"
 
 	if err := s.performBuySellOperation(ctx, user, currencyCode, newUserBalance, newCurrencyBalance); err != nil {
@@ -311,7 +310,7 @@ func (s *Storage) Sell(ctx context.Context, user models.User, currencyCode strin
 	return nil
 }
 
-func (s *Storage) CurrencyBalance(ctx context.Context, user models.User, currencyCode string) (uint64, error) {
+func (s *Storage) CurrencyBalance(ctx context.Context, user authModels.User, currencyCode string) (uint64, error) {
 	const caller = "storage.postgres.CurrencyBalance"
 
 	ctxDb := s.db.WithContext(ctx)
@@ -343,4 +342,56 @@ func (s *Storage) Wallets(ctx context.Context, user authModels.User) ([]currency
 	}
 
 	return userWallets, nil
+}
+
+func (s *Storage) updateUserBalance(ctx context.Context, user authModels.User, newBalanceAmount uint64) error {
+	const caller = "storage.postgres.updateUserBalance"
+
+	ctxTx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if err := recover(); err != nil {
+			ctxTx.Rollback()
+		}
+	}()
+
+	user.Balance = newBalanceAmount
+	result := ctxTx.Save(&user)
+	if result.Error != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, result.Error)
+	}
+
+	if err := ctxTx.Commit().Error; err != nil {
+		ctxTx.Rollback()
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+	return nil
+}
+
+func (s *Storage) Deposit(ctx context.Context, user authModels.User, newBalanceAmount uint64) error {
+	const caller = "storage.postgres.Deposit"
+	if err := s.updateUserBalance(ctx, user, newBalanceAmount); err != nil {
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+	return nil
+}
+
+func (s *Storage) Withdraw(ctx context.Context, user authModels.User, newBalanceAmount uint64) error {
+	const caller = "storage.postgres.Withdraw"
+	if err := s.updateUserBalance(ctx, user, newBalanceAmount); err != nil {
+		return fmt.Errorf("%s: %w", caller, err)
+	}
+	return nil
+}
+
+func (s *Storage) Stop() error {
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		return err
+	}
+	err = sqlDB.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }

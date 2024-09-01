@@ -15,6 +15,41 @@ type Config struct {
 	DB          DBConfig      `yaml:"db" env-required:"true"`
 	Redis       RedisConfig   `yaml:"redis" env-required:"true"`
 	CurrencyApi CurrencyApi   `yaml:"currency_api" env-required:"true"`
+	Mail        Mail          `yaml:"mail" env-required:"true"`
+	Clients     Clients       `yaml:"clients" env-required:"true"`
+	Http        Http          `yaml:"http" env-required:"true"`
+}
+
+type Clients struct {
+	AuthClient     AuthClient     `yaml:"auth" env-required:"true"`
+	CurrencyClient CurrencyClient `yaml:"currency" env-required:"true"`
+}
+
+type AuthClient struct {
+	Addr         string        `yaml:"addr" env-required:"true"`
+	Timeout      time.Duration `yaml:"timeout" env-default:"10s"`
+	RetriesCount int           `yaml:"retries_count" env-default:"3"`
+}
+
+type CurrencyClient struct {
+	Addr         string        `yaml:"addr" env-required:"true"`
+	Timeout      time.Duration `yaml:"timeout" env-default:"10s"`
+	RetriesCount int           `yaml:"retries_count" env-default:"3"`
+}
+
+type Http struct {
+	Port            int           `yaml:"port" env-required:"true"`
+	ShutdownTimeout time.Duration `yaml:"shutdown_timeout" env-default:"5s"`
+	ReadTimeout     time.Duration `yaml:"read_timeout" env-default:"3s"`
+	WriteTimeout    time.Duration `yaml:"write_timeout" env-default:"3s"`
+	IdleTimeout     time.Duration `yaml:"idle_timeout" env-default:"3s"`
+}
+
+type Mail struct {
+	From     string `yaml:"from" env-required:"true"`
+	SmtpHost string `yaml:"smtp_host" env-required:"true"`
+	SmtpPort int    `yaml:"smtp_port" env-default:"587"`
+	ApiKey   string `yaml:"api_key" env-required:"true"`
 }
 
 type CurrencyApi struct {

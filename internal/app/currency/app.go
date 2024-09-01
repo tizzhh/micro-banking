@@ -16,13 +16,7 @@ type App struct {
 	GRPCServer *grpcapp.App
 }
 
-func New(log *slog.Logger, port int, pingTimeout time.Duration, ratesApiTimeout time.Duration) *App {
-	storage, err := postgres.Get()
-
-	if err != nil {
-		panic(err)
-	}
-
+func New(log *slog.Logger, port int, pingTimeout time.Duration, ratesApiTimeout time.Duration, storage *postgres.Storage) *App {
 	cache, err := redis.Get(log)
 	if err != nil {
 		panic(err)

@@ -13,13 +13,7 @@ type App struct {
 	GRPCServer *grpcapp.App
 }
 
-func New(log *slog.Logger, port int, tokenTTL time.Duration) *App {
-	storage, err := postgres.Get()
-
-	if err != nil {
-		panic(err)
-	}
-
+func New(log *slog.Logger, port int, tokenTTL time.Duration, storage *postgres.Storage) *App {
 	authService := auth.New(log, tokenTTL, storage, storage, storage, storage)
 
 	grpcApp := grpcapp.New(log, port, tokenTTL, authService)

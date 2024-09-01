@@ -142,8 +142,7 @@ func (c *Currency) Buy(ctx context.Context, email string, currencyCode string, a
 
 	log.Info("currency bought")
 
-	currencyBought := float32((newCurrencyBalance - currencyBalance) / priceToCentsConversion)
-
+	currencyBought := float32(float32(newCurrencyBalance-currencyBalance) / priceToCentsConversion)
 	return currencyBought, nil
 }
 
@@ -200,7 +199,7 @@ func (c *Currency) Sell(ctx context.Context, email string, currencyCode string, 
 
 	log.Info("currency sold")
 
-	currencySold := float32((currencyBalance - newCurrencyBalance) / priceToCentsConversion)
+	currencySold := float32(float32(currencyBalance-newCurrencyBalance) / priceToCentsConversion)
 
 	return currencySold, nil
 }

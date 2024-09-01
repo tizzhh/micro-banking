@@ -101,7 +101,9 @@ func (a *Auth) Login(ctx context.Context, email string, password string) (string
 
 	log.Info("user logged in successfully")
 
-	token, err := jwt.NewToken(user, a.tokenTTL)
+	jwt := jwt.New(a.tokenTTL)
+
+	token, err := jwt.NewToken(user)
 	if err != nil {
 		log.Error("failed to generate token", sl.Error(err))
 		return "", fmt.Errorf("%s: %w", caller, err)

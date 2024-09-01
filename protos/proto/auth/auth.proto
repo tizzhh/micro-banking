@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth;
 
-// import "buf/validate/validate.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "tizzhh.auth.v1;authv1";
 
