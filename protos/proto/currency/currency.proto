@@ -27,8 +27,8 @@ message WalletResponse {
 
 message BuyRequest {
     string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];
-    string currency_code = 2 [(buf.validate.field).string.len = 3];
-    uint64 amount = 3 [(buf.validate.field).uint64.gte = 0];
+    string currency_code = 2 [(buf.validate.field).string = {in: ["EUR", "RUB", "CNY"]}];
+    uint64 amount = 3 [(buf.validate.field).uint64.gt = 0];
 }
 
 message BuyResponse {
@@ -38,8 +38,8 @@ message BuyResponse {
 
 message SellRequest {
     string email = 1 [(buf.validate.field).string.email = true, (buf.validate.field).string.max_len = 100];
-    string currency_code = 2 [(buf.validate.field).string.len = 3];
-    uint64 amount = 3 [(buf.validate.field).uint64.gte = 0];
+    string currency_code = 2 [(buf.validate.field).string = {in: ["EUR", "RUB", "CNY"]}];
+    uint64 amount = 3 [(buf.validate.field).uint64.gt = 0];
 }
 
 message SellResponse {
