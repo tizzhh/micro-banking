@@ -19,10 +19,10 @@ import (
 type BankApi struct {
 	log       *slog.Logger
 	validator *validator.Validate
-	balance   Balance
+	balance   Balancer
 }
 
-func New(log *slog.Logger, validator *validator.Validate, balance Balance) *BankApi {
+func New(log *slog.Logger, validator *validator.Validate, balance Balancer) *BankApi {
 	return &BankApi{
 		log:       log,
 		validator: validator,
@@ -30,7 +30,8 @@ func New(log *slog.Logger, validator *validator.Validate, balance Balance) *Bank
 	}
 }
 
-type Balance interface {
+//go:generate go run github.com/vektra/mockery/v2 --name=Balancer
+type Balancer interface {
 	Deposit(ctx context.Context, email string, amount float32) (float32, error)
 	Withdraw(ctx context.Context, email string, amount float32) (float32, error)
 }

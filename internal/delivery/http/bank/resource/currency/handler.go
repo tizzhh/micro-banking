@@ -19,6 +19,7 @@ type CurrencyApi struct {
 	currencyClient CurrencyClient
 }
 
+//go:generate go run github.com/vektra/mockery/v2 --name=CurrencyClient
 type CurrencyClient interface {
 	Buy(ctx context.Context, email string, currencyCode string, amount uint64) (float32, error)
 	Sell(ctx context.Context, email string, currencyCode string, amount uint64) (float32, error)

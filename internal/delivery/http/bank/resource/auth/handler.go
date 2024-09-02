@@ -20,6 +20,7 @@ type AuthAPI struct {
 	authClient AuthClient
 }
 
+//go:generate go run github.com/vektra/mockery/v2 --name=AuthClient
 type AuthClient interface {
 	Register(ctx context.Context, email string, password string, firstName string, lastName string, age uint32) (uint64, error)
 	Login(ctx context.Context, email string, password string) (string, error)
