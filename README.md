@@ -2,6 +2,12 @@
 
 A simple example of small subset of banking operations in a microservice environment. User management, balance management and currency acquirement.
 
+## Usage 💡
+
+- clone the repository
+- `cd infra`
+- `docker build -f prod.Dockerfile . -t myapp_app`
+
 ## Requirements
 
 - Docker & Docker compose
@@ -84,13 +90,6 @@ Swag documentation included:
 | currency_id         | Foreign key      | ✅        |             |
 | balance | BIGINT      | ✅        |             |
 
-
-
-## Usage 💡
-
-- clone the repository
-- `cd infra`
-- `docker build -f prod.Dockerfile . -t myapp_app`
 
 ## 📁 Project structure
 
