@@ -33,6 +33,19 @@ func New(log *slog.Logger, validator *validator.Validate, currencyClient Currenc
 	}
 }
 
+// MyWallet godoc
+// @Summary MyWallet
+// @Description Return wallet of the user
+// @Tags bank
+// @Accept json
+// @Produce json
+// @Param UserRequest body WalletRequest true "Wallet request"
+// @Success 200 {object} WalletResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /bank/my-wallet [get]
+// @Security BearerAuth
 func (ca *CurrencyApi) MyWallet() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.currency.handler.MyWallet"
@@ -64,6 +77,19 @@ func (ca *CurrencyApi) MyWallet() http.HandlerFunc {
 	}
 }
 
+// BuyCurrency godoc
+// @Summary Buy currency
+// @Description Buy currency
+// @Tags currency
+// @Accept json
+// @Produce json
+// @Param BuyRequest body BuyRequest true "Buy request"
+// @Success 200 {object} BuyResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /currency/buy [post]
+// @Security BearerAuth
 func (ca *CurrencyApi) BuyCurrency() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.currency.handler.Buy"
@@ -93,13 +119,26 @@ func (ca *CurrencyApi) BuyCurrency() http.HandlerFunc {
 
 		log.Info("currency bought")
 
-		render.JSON(w, r, BuyReponse{
+		render.JSON(w, r, BuyResponse{
 			BoughtAmount: boughtAmount,
 			CurrencyCode: buyRequest.CurrencyCode,
 		})
 	}
 }
 
+// SellCurrency godoc
+// @Summary Sell currency
+// @Description Sell currency
+// @Tags currency
+// @Accept json
+// @Produce json
+// @Param SellRequest body SellRequest true "Sell request"
+// @Success 200 {object} SellResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /currency/sell [post]
+// @Security BearerAuth
 func (ca *CurrencyApi) SellCurrency() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.currency.handler.Sell"
@@ -129,7 +168,7 @@ func (ca *CurrencyApi) SellCurrency() http.HandlerFunc {
 
 		log.Info("currency sold")
 
-		render.JSON(w, r, SellReponse{
+		render.JSON(w, r, SellResponse{
 			SoldAmount:   soldAmount,
 			CurrencyCode: sellRequest.CurrencyCode,
 		})

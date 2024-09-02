@@ -36,6 +36,16 @@ func New(log *slog.Logger, validator *validator.Validate, authClient AuthClient)
 	}
 }
 
+// NewUser godoc
+// @Summary Register a new user
+// @Description Register a new user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param RegisterRequest body RegisterRequest true "Register Request"
+// @Success 200 {object} UserResponse
+// @Failure 400 {object} response.Error
+// @Router /auth/register [post]
 func (aa *AuthAPI) NewUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.auth.handler.NewUser"
@@ -77,6 +87,18 @@ func (aa *AuthAPI) NewUser() http.HandlerFunc {
 	}
 }
 
+// Login godoc
+// @Summary Login a user
+// @Description Login a user and get token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param LoginRequest body LoginRequest true "Login Request"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /auth/login [post]
 func (aa *AuthAPI) LoginUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.auth.handler.LoginUser"
@@ -111,6 +133,19 @@ func (aa *AuthAPI) LoginUser() http.HandlerFunc {
 	}
 }
 
+// UpdatePassword godoc
+// @Summary Update user's password
+// @Description Update user's password with new password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param UpdatePasswordRequest body UpdatePasswordRequest true "Update Password Request"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /auth/change-password [put]
+// @Security BearerAuth
 func (aa *AuthAPI) UpdatePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.auth.handler.UpdatePassword"
@@ -144,6 +179,20 @@ func (aa *AuthAPI) UpdatePassword() http.HandlerFunc {
 	}
 }
 
+// DeleteUser godoc
+// @Summary Unregister user
+// @Description Unregister user from the service.
+// This action deletes corresponding data from the db
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param DeleteUserRequest body DeleteUserRequest true "Delete user Request"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /auth/unregister [delete]
+// @Security BearerAuth
 func (aa *AuthAPI) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.auth.handler.DeleteUser"
@@ -176,6 +225,19 @@ func (aa *AuthAPI) DeleteUser() http.HandlerFunc {
 	}
 }
 
+// User godoc
+// @Summary Returns user
+// @Description Returns user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param UserRequest body UserRequest true "User Request"
+// @Success 200 {object} UserResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /auth/user [get]
+// @Security BearerAuth
 func (aa *AuthAPI) User() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.auth.handler.User"

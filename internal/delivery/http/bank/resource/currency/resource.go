@@ -19,7 +19,7 @@ type BuyRequest struct {
 	Amount       uint64 `json:"amount" validate:"required,gte=0"`
 }
 
-type BuyReponse struct {
+type BuyResponse struct {
 	BoughtAmount float32 `json:"bought_amount"`
 	CurrencyCode string  `json:"currency_code"`
 }
@@ -30,7 +30,7 @@ type SellRequest struct {
 	Amount       uint64 `json:"amount" validate:"required,gte=0"`
 }
 
-type SellReponse struct {
+type SellResponse struct {
 	SoldAmount   float32 `json:"sold_amount"`
 	CurrencyCode string  `json:"currency_code"`
 }

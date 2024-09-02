@@ -2,7 +2,7 @@ package currencyapihttp
 
 import "encoding/json"
 
-type Reponse struct {
+type Response struct {
 	Meta Meta `json:"meta"`
 	Data Data `json:"data"`
 }

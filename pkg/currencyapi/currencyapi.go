@@ -53,7 +53,7 @@ func (a *Api) QueryRates(ctx context.Context, currencyCode string) (float32, err
 		return 0, fmt.Errorf("%s: %w", caller, err)
 	}
 
-	var response currencyapihttp.Reponse
+	var response currencyapihttp.Response
 	if err = json.Unmarshal(resBody, &response); err != nil {
 		log.Error("failed to unmarshal response body", sl.Error(err))
 		return 0, fmt.Errorf("%s: %w", caller, err)

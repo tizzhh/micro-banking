@@ -35,12 +35,32 @@ type Balance interface {
 	Withdraw(ctx context.Context, email string, amount float32) (float32, error)
 }
 
+// Liveness godoc
+// @Summary Liveness
+// @Description Liveness check
+// @Tags bank
+// @Produce json
+// @Success 200 {object} response.Response
+// @Router /liveness [get]
 func (ba *BankApi) Liveness() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		response.ReponsdWithOK(w, r, "I'm alive!", http.StatusOK)
 	}
 }
 
+// Deposit godoc
+// @Summary Deposit
+// @Description Deposit money to the user's balance account
+// @Tags bank
+// @Accept json
+// @Produce json
+// @Param UserRequest body DepositRequest true "Deposit request"
+// @Success 200 {object} DepositResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /bank/deposit [post]
+// @Security BearerAuth
 func (ba *BankApi) Deposit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.currency.handler.AddMoneyToBalance"
@@ -72,6 +92,19 @@ func (ba *BankApi) Deposit() http.HandlerFunc {
 	}
 }
 
+// Withdraw godoc
+// @Summary Deposit
+// @Description Withdraw money from the user's balance account
+// @Tags bank
+// @Accept json
+// @Produce json
+// @Param UserRequest body WithdrawRequest true "Withdraw request"
+// @Success 200 {object} WithdrawResponse
+// @Failure 400 {object} response.Error
+// @Failure 404 {object} response.Error
+// @Failure 500 {object} response.Error
+// @Router /bank/withdraw [post]
+// @Security BearerAuth
 func (ba *BankApi) Withdraw() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const caller = "bank.currency.handler.RemoveMoneyFromBalance"
@@ -99,7 +132,7 @@ func (ba *BankApi) Withdraw() http.HandlerFunc {
 
 		log.Info("deposit completed")
 
-		render.JSON(w, r, DepositResponse{NewBalanceAmount: newBalanceAMount})
+		render.JSON(w, r, WithdrawResponse{NewBalanceAmount: newBalanceAMount})
 	}
 }
 

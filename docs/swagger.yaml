@@ -1,0 +1,579 @@
+basePath: /v1
+definitions:
+  auth.DeleteUserRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      age:
+        minimum: 18
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+    required:
+    - age
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  auth.UpdatePasswordRequest:
+    properties:
+      email:
+        type: string
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - email
+    - new_password
+    - old_password
+    type: object
+  auth.UserRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  auth.UserResponse:
+    properties:
+      age:
+        type: integer
+      balance:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  bank.DepositRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: number
+      email:
+        type: string
+    required:
+    - amount
+    - email
+    type: object
+  bank.DepositResponse:
+    properties:
+      new_balance_amount:
+        minimum: 0
+        type: number
+    required:
+    - new_balance_amount
+    type: object
+  bank.WithdrawRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: number
+      email:
+        type: string
+    required:
+    - amount
+    - email
+    type: object
+  bank.WithdrawResponse:
+    properties:
+      new_balance_amount:
+        minimum: 0
+        type: number
+    required:
+    - new_balance_amount
+    type: object
+  currency.BuyRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: integer
+      currency_code:
+        enum:
+        - RUB
+        - EUR
+        - CNY
+        type: string
+      email:
+        type: string
+    required:
+    - amount
+    - currency_code
+    - email
+    type: object
+  currency.BuyResponse:
+    properties:
+      bought_amount:
+        type: number
+      currency_code:
+        type: string
+    type: object
+  currency.SellRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: integer
+      currency_code:
+        enum:
+        - RUB
+        - EUR
+        - CNY
+        type: string
+      email:
+        type: string
+    required:
+    - amount
+    - currency_code
+    - email
+    type: object
+  currency.SellResponse:
+    properties:
+      currency_code:
+        type: string
+      sold_amount:
+        type: number
+    type: object
+  currency.Wallet:
+    properties:
+      balance:
+        type: integer
+      currency_code:
+        type: string
+    type: object
+  currency.WalletRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  currency.WalletResponse:
+    properties:
+      wallet:
+        items:
+          $ref: '#/definitions/currency.Wallet'
+        type: array
+    type: object
+  response.Error:
+    properties:
+      error:
+        type: string
+    type: object
+  response.Response:
+    properties:
+      message:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    name: tizzhh
+  description: This is a server for simulating some bank operations
+  title: Micro-bank api
+  version: "1.0"
+paths:
+  /auth/change-password:
+    put:
+      consumes:
+      - application/json
+      description: Update user's password with new password
+      parameters:
+      - description: Update Password Request
+        in: body
+        name: UpdatePasswordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/auth.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Update user's password
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login a user and get token
+      parameters:
+      - description: Login Request
+        in: body
+        name: LoginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Login a user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Register Request
+        in: body
+        name: RegisterRequest
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Register a new user
+      tags:
+      - auth
+  /auth/unregister:
+    delete:
+      consumes:
+      - application/json
+      description: Unregister user from the service.
+      parameters:
+      - description: Delete user Request
+        in: body
+        name: DeleteUserRequest
+        required: true
+        schema:
+          $ref: '#/definitions/auth.DeleteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Unregister user
+      tags:
+      - auth
+  /auth/user:
+    get:
+      consumes:
+      - application/json
+      description: Returns user
+      parameters:
+      - description: User Request
+        in: body
+        name: UserRequest
+        required: true
+        schema:
+          $ref: '#/definitions/auth.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Returns user
+      tags:
+      - auth
+  /bank/deposit:
+    post:
+      consumes:
+      - application/json
+      description: Deposit money to the user's balance account
+      parameters:
+      - description: Deposit request
+        in: body
+        name: UserRequest
+        required: true
+        schema:
+          $ref: '#/definitions/bank.DepositRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bank.DepositResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Deposit
+      tags:
+      - bank
+  /bank/my-wallet:
+    get:
+      consumes:
+      - application/json
+      description: Return wallet of the user
+      parameters:
+      - description: Wallet request
+        in: body
+        name: UserRequest
+        required: true
+        schema:
+          $ref: '#/definitions/currency.WalletRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/currency.WalletResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: MyWallet
+      tags:
+      - bank
+  /bank/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Withdraw money from the user's balance account
+      parameters:
+      - description: Withdraw request
+        in: body
+        name: UserRequest
+        required: true
+        schema:
+          $ref: '#/definitions/bank.WithdrawRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bank.WithdrawResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Deposit
+      tags:
+      - bank
+  /currency/buy:
+    post:
+      consumes:
+      - application/json
+      description: Buy currency
+      parameters:
+      - description: Buy request
+        in: body
+        name: BuyRequest
+        required: true
+        schema:
+          $ref: '#/definitions/currency.BuyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/currency.BuyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Buy currency
+      tags:
+      - currency
+  /currency/sell:
+    post:
+      consumes:
+      - application/json
+      description: Sell currency
+      parameters:
+      - description: Sell request
+        in: body
+        name: SellRequest
+        required: true
+        schema:
+          $ref: '#/definitions/currency.SellRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/currency.SellResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Sell currency
+      tags:
+      - currency
+  /liveness:
+    get:
+      description: Liveness check
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Liveness
+      tags:
+      - bank
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

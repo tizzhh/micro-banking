@@ -243,13 +243,15 @@ func TestUpdatePasswordDelete_HappyPath(t *testing.T) {
 	lastName := gofakeit.LetterN(namesLen)
 	age := gofakeit.Number(18, 100)
 
-	st.AuthClient.Register(ctx, &authv1.RegisterRequest{
+	_, err := st.AuthClient.Register(ctx, &authv1.RegisterRequest{
 		Email:     email,
 		Password:  password,
 		FirstName: firstName,
 		LastName:  lastName,
 		Age:       uint32(age),
 	})
+
+	require.NoError(t, err)
 
 	respLogin, err := st.AuthClient.Login(ctx, &authv1.LoginRequest{
 		Email:    email,
@@ -291,13 +293,16 @@ func TestUpdatePassword_FailCases(t *testing.T) {
 	lastName := gofakeit.LetterN(namesLen)
 	age := gofakeit.Number(18, 100)
 
-	st.AuthClient.Register(ctx, &authv1.RegisterRequest{
+	_, err := st.AuthClient.Register(ctx, &authv1.RegisterRequest{
 		Email:     email,
 		Password:  password,
 		FirstName: firstName,
 		LastName:  lastName,
 		Age:       uint32(age),
 	})
+
+	require.NoError(t, err)
+
 	tests := []struct {
 		name        string
 		email       string
@@ -365,13 +370,16 @@ func TestDelete_FailCases(t *testing.T) {
 	lastName := gofakeit.LetterN(namesLen)
 	age := gofakeit.Number(18, 100)
 
-	st.AuthClient.Register(ctx, &authv1.RegisterRequest{
+	_, err := st.AuthClient.Register(ctx, &authv1.RegisterRequest{
 		Email:     email,
 		Password:  password,
 		FirstName: firstName,
 		LastName:  lastName,
 		Age:       uint32(age),
 	})
+
+	require.NoError(t, err)
+
 	tests := []struct {
 		name        string
 		email       string

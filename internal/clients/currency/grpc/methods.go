@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	currencyv1 "github.com/tizzhh/micro-banking/gen/go/protos/proto/currency"
-	currencyReponse "github.com/tizzhh/micro-banking/internal/delivery/http/bank/resource/currency"
+	currencyResponse "github.com/tizzhh/micro-banking/internal/delivery/http/bank/resource/currency"
 	"github.com/tizzhh/micro-banking/pkg/logger/sl"
 )
 
@@ -41,7 +41,7 @@ func (c *Client) Sell(ctx context.Context, email string, currencyCode string, am
 	return resp.GetSold(), nil
 }
 
-func (c *Client) Wallets(ctx context.Context, email string) (currencyReponse.WalletResponse, error) {
+func (c *Client) Wallets(ctx context.Context, email string) (currencyResponse.WalletResponse, error) {
 	const caller = "clients.currency.grpc.Wallets"
 	log := sl.AddCaller(c.log, caller)
 	log.Info("getting user wallet")
@@ -50,17 +50,17 @@ func (c *Client) Wallets(ctx context.Context, email string) (currencyReponse.Wal
 	})
 	if err != nil {
 		log.Error("failed to get user's wallet", sl.Error(err))
-		return currencyReponse.WalletResponse{}, fmt.Errorf("%s: %w", caller, err)
+		return currencyResponse.WalletResponse{}, fmt.Errorf("%s: %w", caller, err)
 	}
 
 	userWalletResp := resp.GetUserWallet()
-	userWallet := make([]currencyReponse.Wallet, 0, len(userWalletResp))
+	userWallet := make([]currencyResponse.Wallet, 0, len(userWalletResp))
 	for _, currency := range userWalletResp {
-		userWallet = append(userWallet, currencyReponse.Wallet{
+		userWallet = append(userWallet, currencyResponse.Wallet{
 			CurrencyCode: currency.GetCurrencyCode(),
 			Balance:      currency.GetBalance(),
 		})
 	}
 
-	return currencyReponse.WalletResponse{Wallets: userWallet}, nil
+	return currencyResponse.WalletResponse{Wallets: userWallet}, nil
 }

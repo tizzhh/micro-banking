@@ -17,6 +17,22 @@ const (
 	KafkaTopic = "Mail"
 )
 
+// @title Micro-bank api
+// @version 1.0
+// @description This is a server for simulating some bank operations
+
+// @contact.name tizzhh
+
+// @host localhost:8080
+// @BasePath /v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
+
 func main() {
 	cfg := config.Get()
 	log := sl.Get()

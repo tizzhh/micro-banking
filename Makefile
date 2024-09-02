@@ -17,5 +17,8 @@ mail_service: clean
 bank_service: clean
 	go build -o $@ cmd/bank/main.go 
 
+swag:
+	swag init -d internal/delivery/http/bank/resource/auth,internal/delivery/http/bank/resource/bank,internal/delivery/http/bank/resource/currency,internal/api/response -g ../../../../../../cmd/bank/main.go -o docs
+
 clean:
 	rm -rf auth_service currency_service bank_service mail_service

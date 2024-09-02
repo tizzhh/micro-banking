@@ -9,7 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type Reponse struct {
+type Response struct {
 	Message string `json:"message"`
 }
 
@@ -19,7 +19,7 @@ type Error struct {
 
 func ReponsdWithOK(w http.ResponseWriter, r *http.Request, message string, statusCode int) {
 	w.WriteHeader(statusCode)
-	render.JSON(w, r, Reponse{Message: message})
+	render.JSON(w, r, Response{Message: message})
 }
 
 func RespondWithError(w http.ResponseWriter, r *http.Request, message string, statusCode int) {

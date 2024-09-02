@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/tizzhh/micro-banking/internal/api/permissions"
 	"github.com/tizzhh/micro-banking/internal/delivery/http/bank/resource/auth"
 	bankApi "github.com/tizzhh/micro-banking/internal/delivery/http/bank/resource/bank"
@@ -36,6 +37,12 @@ func New(
 
 	jwt := jwt.New(tokenTTL)
 	permissionChecker := permissions.New(jwt)
+
+	router.Get("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs"))).ServeHTTP)
+
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/docs/swagger.json"),
+	))
 
 	router.Route("/v1/auth", func(r chi.Router) {
 		r.Method(http.MethodPost, "/register", authApi.NewUser())
