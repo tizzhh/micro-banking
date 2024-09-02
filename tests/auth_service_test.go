@@ -329,7 +329,7 @@ func TestUpdatePassword_FailCases(t *testing.T) {
 			email:       gofakeit.Email(),
 			oldPassword: randomFakePassword(),
 			newPassword: "",
-			expectedErr: "email: value is empty, which is not a valid email address",
+			expectedErr: "new_password: value length must be at least 5 characters",
 		},
 		{
 			name:        "Update password with empty email and password",

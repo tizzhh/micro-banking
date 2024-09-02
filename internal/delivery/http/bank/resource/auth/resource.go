@@ -2,10 +2,10 @@ package auth
 
 type RegisterRequest struct {
 	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required"`
-	FirstName string `json:"first_name" validate:"required,alpha"`
-	LastName  string `json:"last_name" validate:"required,alpha"`
-	Age       uint32 `json:"age" validate:"required,gte=18"`
+	Password  string `json:"password" validate:"required,gte=5,lte=100"`
+	FirstName string `json:"first_name" validate:"required,alphaunicode,gte=5,lte=100"`
+	LastName  string `json:"last_name" validate:"required,alphaunicode,gte=5,lte=100"`
+	Age       uint32 `json:"age" validate:"required,gte=18,lt=150"`
 }
 
 type UserResponse struct {
@@ -19,7 +19,7 @@ type UserResponse struct {
 
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,gte=5,lte=100"`
 }
 
 type LoginResponse struct {
@@ -34,7 +34,7 @@ type UpdatePasswordRequest struct {
 
 type DeleteUserRequest struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,gte=5,lte=100"`
 }
 
 type UserRequest struct {

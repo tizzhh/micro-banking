@@ -46,6 +46,7 @@ func New(log *slog.Logger, validator *validator.Validate, authClient AuthClient)
 // @Param RegisterRequest body RegisterRequest true "Register Request"
 // @Success 200 {object} UserResponse
 // @Failure 400 {object} response.Error
+// @Failure 500 {object} response.Error
 // @Router /auth/register [post]
 func (aa *AuthAPI) NewUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

@@ -5,6 +5,19 @@ A simple example of small subset of banking operations in a microservice environ
 ## Requirements
 
 - Docker & Docker compose
+- config in the format of example.yaml in config/ directory. If env CONFIG_PATH is not set, the service expects config/local.yaml as config.
+- .env in infra/ directory with the following fields: 
+    - POSTGRES_USER=
+    - POSTGRES_PASSWORD=
+    - POSTGRES_DB=
+- for goose migrations another .env is required:
+    ```
+    goose.env
+    export GOOSE_DRIVER='postgres'
+    export GOOSE_DBSTRING='postgres://user:password@host:port/db_name?sslmode=disable'
+    export GOOSE_MIGRATION_DIR='./migrations'
+    ```
+    then `source goose.env` and goose up
 
 ## Used packages / tools / stack
 
@@ -50,7 +63,6 @@ Swag documentation included:
 | id             | BIGINT      | ✅        | ✅           |
 | email          | VARCHAR      | ✅        |             |
 | pass_hash         | VARCHAR      | ✅        |             |
-| published_date | DATE      | ✅        |             |
 | first_name      | VARCHAR      |  ✅       |             |
 | last_name    | VARCHAR      |  ✅       |             |
 | balance     | BIGINT | ✅        |             |

@@ -109,7 +109,7 @@ func Get() *Config {
 }
 
 const (
-	defaultConfigPath = "/Users/vad.kuznetsov/Desktop/projects/micro-bank/config/local.yaml"
+	defaultConfigPath = "./config/local.yaml"
 )
 
 func MustLoad() *Config {
