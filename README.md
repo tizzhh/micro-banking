@@ -6,7 +6,7 @@ A simple example of small subset of banking operations in a microservice environ
 
 - clone the repository
 - `cd infra`
-- `docker build -f prod.Dockerfile . -t myapp_app`
+- `docker compose up -d`
 
 ## Requirements
 
