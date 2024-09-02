@@ -1,0 +1,60 @@
+env: "local"
+token_ttl: 1h
+
+secret_key: secret-key
+
+mail:
+  from: from-email
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  api_key: api-key
+
+clients:
+  auth:
+    addr: localhost:8081
+    timeout: 10s
+    retries_count: 3
+  currency:
+    addr: localhost:8082
+    timeout: 10s
+    retries_count: 3
+
+http:
+  port: 8080
+  shutdown_timeout: 5s
+  read_timeout: 5s
+  write_timeout: 5s
+  idle_timeout: 5s
+
+grpc:
+  auth_port: 8081
+  currency_port: 8082
+  timeout: 30s
+
+db:
+  db_name: db_name
+  db_user: db_user
+  db_password: db_pass
+  db_host: localhost
+  db_port: 5432
+
+redis:
+  port: 6379
+  host: localhost
+  password: bank_admin
+  ping_timout: 5s
+  key_ttl: 1m
+
+currency_api:
+  url: https://api.currencyapi.com/v3/latest
+  api_key: api-key
+  timeout: 3s
+
+kafka:
+  brokers: localhost:9092
+  producer:
+    return_successes: true
+    required_acks: 0
+    retry_max: 3
+  consumer:
+    return_errors: true

@@ -60,6 +60,8 @@ Swag documentation included:
 
 💡 [swaggo/swag](https://github.com/swaggo/swag) : `make swag`
 
+The documentation can be found at localhost/swagger/index.html
+
 ##  Database design
 
 #### users
